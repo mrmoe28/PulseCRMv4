@@ -22,8 +22,7 @@
     "prepare": "husky install",
     "docker:dev": "docker-compose -f docker/docker-compose.dev.yml up",
     "docker:build": "docker build -f docker/prod.Dockerfile -t pulsecrm:latest .",
-    "vercel-build": "turbo build",
-    "postinstall": "turbo db:generate"
+    "vercel-build": "turbo build"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.10.0",

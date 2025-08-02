@@ -10,12 +10,6 @@
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/apps/web/$1"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
