@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, LayoutGrid, LayoutList } from 'lucide-react';
+import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, Send, LayoutGrid, LayoutList } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import DocumentViewer from '@/components/DocumentViewer';
 
@@ -73,6 +73,12 @@ export default function DocumentsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [changingCategoryDoc, setChangingCategoryDoc] = useState<Document | null>(null);
   const [newCategory, setNewCategory] = useState<string>('');
+  const [sendingForSignature, setSendingForSignature] = useState<Document | null>(null);
+  const [signatureFormData, setSignatureFormData] = useState({
+    signerName: '',
+    signerEmail: '',
+    message: '',
+  });
 
   // Load documents on mount
   useEffect(() => {
@@ -206,6 +212,50 @@ export default function DocumentsPage() {
     addToast(`Changed category to ${DOCUMENT_CATEGORIES[newCategory as keyof typeof DOCUMENT_CATEGORIES]?.name || 'Other'}`, 'success');
     setChangingCategoryDoc(null);
     setNewCategory('');
+  };
+
+  const handleSendForSignature = async () => {
+    if (!sendingForSignature || !signatureFormData.signerName || !signatureFormData.signerEmail) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/signature-request/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: sendingForSignature.id,
+          documentName: sendingForSignature.name,
+          documentUrl: sendingForSignature.url,
+          signerEmail: signatureFormData.signerEmail,
+          signerName: signatureFormData.signerName,
+          message: signatureFormData.message,
+          requestedBy: 'PulseCRM User', // In production, get from session
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        addToast(`Signature request sent to ${signatureFormData.signerEmail}`, 'success');
+        setSendingForSignature(null);
+        setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+        
+        // Update document status
+        setDocuments(prev =>
+          prev.map(doc =>
+            doc.id === sendingForSignature.id
+              ? { ...doc, status: 'pending_signature' as const }
+              : doc
+          )
+        );
+      } else {
+        addToast(data.error || 'Failed to send signature request', 'error');
+      }
+    } catch (error) {
+      addToast('Failed to send signature request', 'error');
+    }
   };
 
   const getFileIcon = (doc: Document) => {
@@ -479,13 +529,22 @@ export default function DocumentsPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           {doc.type === 'application/pdf' && doc.status !== 'signed' && doc.status !== 'completed' && (
-                            <button
-                              onClick={() => setSigningDocument(doc)}
-                              className="p-2 text-gray-500 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
-                              title="Sign Document"
-                            >
-                              <PenTool className="w-4 h-4" />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => setSigningDocument(doc)}
+                                className="p-2 text-gray-500 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                                title="Sign Document"
+                              >
+                                <PenTool className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setSendingForSignature(doc)}
+                                className="p-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                                title="Send for Signature"
+                              >
+                                <Send className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
                           <button
                             onClick={() => {
@@ -571,13 +630,22 @@ export default function DocumentsPage() {
                       <Eye className="w-4 h-4 mx-auto" />
                     </button>
                     {doc.type === 'application/pdf' && doc.status !== 'signed' && doc.status !== 'completed' && (
-                      <button
-                        onClick={() => setSigningDocument(doc)}
-                        className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title="Sign"
-                      >
-                        <PenTool className="w-4 h-4 mx-auto" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setSigningDocument(doc)}
+                          className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          title="Sign"
+                        >
+                          <PenTool className="w-4 h-4 mx-auto" />
+                        </button>
+                        <button
+                          onClick={() => setSendingForSignature(doc)}
+                          className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          title="Send"
+                        >
+                          <Send className="w-4 h-4 mx-auto" />
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => {
@@ -703,6 +771,90 @@ export default function DocumentsPage() {
                 className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
                 Change Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send for Signature Modal */}
+      {sendingForSignature && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Send Document for Signature
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Send "{sendingForSignature.name}" to be electronically signed
+            </p>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Signer's Name *
+                </label>
+                <input
+                  type="text"
+                  value={signatureFormData.signerName}
+                  onChange={(e) => setSignatureFormData({ ...signatureFormData, signerName: e.target.value })}
+                  placeholder="John Doe"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Signer's Email *
+                </label>
+                <input
+                  type="email"
+                  value={signatureFormData.signerEmail}
+                  onChange={(e) => setSignatureFormData({ ...signatureFormData, signerEmail: e.target.value })}
+                  placeholder="john@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Message (Optional)
+                </label>
+                <textarea
+                  value={signatureFormData.message}
+                  onChange={(e) => setSignatureFormData({ ...signatureFormData, message: e.target.value })}
+                  placeholder="Please review and sign this document at your earliest convenience."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-6">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                <strong>📧 What happens next:</strong><br />
+                • The signer will receive an email with a secure link<br />
+                • They can review and sign the document online<br />
+                • You'll be notified when the document is signed<br />
+                • The signature request expires in 7 days
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setSendingForSignature(null);
+                  setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendForSignature}
+                disabled={!signatureFormData.signerName || !signatureFormData.signerEmail}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              >
+                Send for Signature
               </button>
             </div>
           </div>
