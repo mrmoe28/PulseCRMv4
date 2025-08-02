@@ -30,6 +30,7 @@ interface DocumentMetadata {
   category?: string;
   status?: string;
   base64Data?: string; // Store file data for development
+  storageUrl?: string; // Store the actual URL for Vercel Blob
 }
 
 async function ensureDirectories() {
@@ -138,13 +139,14 @@ export async function POST(request: NextRequest) {
     const newDocument: DocumentMetadata = {
       id: timestamp.toString(),
       name: file.name,
-      filename: useVercelBlob ? fileUrl : filename,
+      filename: filename, // Always store the actual filename
       size: file.size,
       type: file.type,
       uploadDate: new Date().toISOString(),
       category: formData.get('category') as string || 'contracts',
       status: 'draft',
-      ...(isDevelopment && base64Data ? { base64Data } : {})
+      ...(isDevelopment && base64Data ? { base64Data } : {}),
+      ...(useVercelBlob ? { storageUrl: fileUrl } : {}) // Store Vercel Blob URL separately
     };
 
     // Load existing metadata and add new document
@@ -193,7 +195,7 @@ export async function GET() {
       status: doc.status,
       url: doc.base64Data
         ? `data:${doc.type};base64,${doc.base64Data}`
-        : (useVercelBlob ? doc.filename : `/uploads/${doc.filename}`)
+        : (doc.storageUrl || `/uploads/${doc.filename}`)
     }));
     
     console.log('Returning documents:', documents.length);

@@ -37,8 +37,11 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
       };
       
       reader.readAsDataURL(document.file);
+    } else if (document.url.includes('blob.vercel-storage.com')) {
+      // Vercel Blob URLs are CORS-enabled, use directly
+      setPdfUrl(document.url);
     } else if (document.url.startsWith('http://') || document.url.startsWith('https://')) {
-      // For remote URLs, use our proxy API to avoid CORS issues
+      // For other remote URLs, use our proxy API to avoid CORS issues
       setPdfUrl(`/api/documents?url=${encodeURIComponent(document.url)}`);
     }
   }, [document.file, document.url]);
@@ -149,42 +152,54 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
           </div>
         ) : (
           <>
-            {/* Main PDF viewer using embed/object tags for better compatibility */}
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              aria-label={document.name}
-            >
-              <embed
+            {/* Try iframe first for better compatibility with Vercel Blob URLs */}
+            {pdfUrl.includes('blob.vercel-storage.com') ? (
+              <iframe
                 src={pdfUrl}
+                className="w-full h-full border-0"
+                title={document.name}
+                onError={() => {
+                  setError('Failed to load PDF. Try downloading or opening in a new tab.');
+                }}
+              />
+            ) : (
+              /* Use object/embed for other URLs */
+              <object
+                data={pdfUrl}
                 type="application/pdf"
                 className="w-full h-full"
-              />
-              {/* Fallback for browsers that don't support inline PDF */}
-              <div className="text-center p-8">
-                <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-6">
-                  Your browser cannot display this PDF inline.
-                </p>
-                <div className="space-y-3 max-w-sm mx-auto">
-                  <button
-                    onClick={downloadFile}
-                    className="block w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    <Download className="h-5 w-5 inline mr-2" />
-                    Download PDF
-                  </button>
-                  <button
-                    onClick={openInNewTab}
-                    className="block w-full px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    <ExternalLink className="h-5 w-5 inline mr-2" />
-                    Open in New Tab
-                  </button>
+                aria-label={document.name}
+              >
+                <embed
+                  src={pdfUrl}
+                  type="application/pdf"
+                  className="w-full h-full"
+                />
+                {/* Fallback for browsers that don't support inline PDF */}
+                <div className="text-center p-8">
+                  <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-6">
+                    Your browser cannot display this PDF inline.
+                  </p>
+                  <div className="space-y-3 max-w-sm mx-auto">
+                    <button
+                      onClick={downloadFile}
+                      className="block w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                    >
+                      <Download className="h-5 w-5 inline mr-2" />
+                      Download PDF
+                    </button>
+                    <button
+                      onClick={openInNewTab}
+                      className="block w-full px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      <ExternalLink className="h-5 w-5 inline mr-2" />
+                      Open in New Tab
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </object>
+              </object>
+            )}
           </>
         )}
       </div>
