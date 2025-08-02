@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, Eye, PenTool, LayoutGrid, LayoutList } from 'lucide-react';
+import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, LayoutGrid, LayoutList } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import DocumentViewer from '@/components/DocumentViewer';
 
@@ -71,6 +71,8 @@ export default function DocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [changingCategoryDoc, setChangingCategoryDoc] = useState<Document | null>(null);
+  const [newCategory, setNewCategory] = useState<string>('');
 
   // Load documents on mount
   useEffect(() => {
@@ -187,6 +189,23 @@ export default function DocumentsPage() {
   const handleDelete = (doc: Document) => {
     setDocuments(prev => prev.filter(d => d.id !== doc.id));
     addToast(`Deleted ${doc.name}`, 'success');
+  };
+
+  const handleCategoryChange = async () => {
+    if (!changingCategoryDoc || !newCategory) return;
+    
+    // Update the document's category
+    setDocuments(prev => 
+      prev.map(doc => 
+        doc.id === changingCategoryDoc.id 
+          ? { ...doc, category: newCategory }
+          : doc
+      )
+    );
+    
+    addToast(`Changed category to ${DOCUMENT_CATEGORIES[newCategory as keyof typeof DOCUMENT_CATEGORIES]?.name || 'Other'}`, 'success');
+    setChangingCategoryDoc(null);
+    setNewCategory('');
   };
 
   const getFileIcon = (doc: Document) => {
@@ -468,6 +487,16 @@ export default function DocumentsPage() {
                               <PenTool className="w-4 h-4" />
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              setChangingCategoryDoc(doc);
+                              setNewCategory(doc.category || '');
+                            }}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                            title="Change Category"
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                          </button>
                           <a
                             href={doc.url}
                             download
@@ -550,6 +579,16 @@ export default function DocumentsPage() {
                         <PenTool className="w-4 h-4 mx-auto" />
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setChangingCategoryDoc(doc);
+                        setNewCategory(doc.category || '');
+                      }}
+                      className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      title="Category"
+                    >
+                      <FolderOpen className="w-4 h-4 mx-auto" />
+                    </button>
                     <a
                       href={doc.url}
                       download
@@ -609,6 +648,65 @@ export default function DocumentsPage() {
             addToast('Document signed successfully!', 'success');
           }}
         />
+      )}
+
+      {/* Category Change Modal */}
+      {changingCategoryDoc && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Change Document Category
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Select a new category for "{changingCategoryDoc.name}"
+            </p>
+            
+            <div className="space-y-2 mb-6">
+              {Object.entries(DOCUMENT_CATEGORIES).map(([key, category]) => (
+                <label
+                  key={key}
+                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                    newCategory === key 
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="category"
+                    value={key}
+                    checked={newCategory === key}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    className="sr-only"
+                  />
+                  <span className="text-2xl mr-3">{category.icon}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    {category.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setChangingCategoryDoc(null);
+                  setNewCategory('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCategoryChange}
+                disabled={!newCategory || newCategory === changingCategoryDoc.category}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              >
+                Change Category
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
       <ToastContainer />
