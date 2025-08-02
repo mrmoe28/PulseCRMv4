@@ -28,8 +28,13 @@ interface Database {
     organizations: Organization[];
 }
 
-// Check if we have Vercel Postgres available
-const hasPostgres = !!process.env.POSTGRES_URL;
+// Check if we have PostgreSQL configured
+const hasPostgres = !!(
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL
+);
+const isProduction = process.env.NODE_ENV === 'production';
 const isVercel = process.env.VERCEL === '1';
 const DB_FILE_PATH = path.join(process.cwd(), 'data', 'database.json');
 
@@ -39,6 +44,32 @@ let memoryDb: Database | null = null;
 // Generate unique ID
 function generateId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+}
+
+// Get database connection
+export async function getDatabase() {
+    if (isProduction && !hasPostgres) {
+        throw new Error(
+            'PostgreSQL database is required in production. ' +
+            'Please configure DATABASE_URL or POSTGRES_URL. ' +
+            'See VERCEL_DEPLOYMENT_GUIDE.md for instructions.'
+        );
+    }
+
+    if (hasPostgres) {
+        // Return a postgres-compatible interface
+        return {
+            query: sql,
+            // Add other methods as needed
+        };
+    }
+
+    // In development without postgres, return a mock interface
+    return {
+        query: async () => {
+            throw new Error('Direct SQL queries not supported without PostgreSQL. Configure DATABASE_URL to enable.');
+        }
+    };
 }
 
 // Initialize database tables (Postgres only)
