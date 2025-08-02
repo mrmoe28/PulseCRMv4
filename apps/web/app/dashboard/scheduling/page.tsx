@@ -29,6 +29,17 @@ function SchedulingContent() {
     }
   });
 
+  // Load contractors/employees from localStorage
+  const [contractors, setContractors] = useState<any[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem('contractors');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('schedules', JSON.stringify(schedules));
@@ -130,6 +141,16 @@ function SchedulingContent() {
       selectedDate.getMonth() === currentDate.getMonth() &&
       selectedDate.getDate() === day
     );
+  };
+
+  // Helper function to get employee name from ID
+  const getEmployeeName = (employeeId: string) => {
+    const contractor = contractors.find(c => c.id === employeeId);
+    if (contractor) {
+      return `${contractor.firstName} ${contractor.lastName}`;
+    }
+    // Fallback for old data that might have names instead of IDs
+    return employeeId;
   };
 
   // Function to get schedules for a specific date
@@ -326,9 +347,9 @@ function SchedulingContent() {
                                   ? 'bg-white bg-opacity-20 text-white'
                                   : 'bg-orange-500 text-white'
                                   }`}
-                                title={`${schedule.employee}: ${schedule.job} (${schedule.startTime}-${schedule.endTime})`}
+                                title={`${getEmployeeName(schedule.employee)}: ${schedule.job} (${schedule.startTime}-${schedule.endTime})`}
                               >
-                                {schedule.employee.split(' ')[0]}: {schedule.job.substring(0, 8)}
+                                {getEmployeeName(schedule.employee).split(' ')[0]}: {schedule.job.substring(0, 8)}
                               </div>
                             ))}
                             {daySchedules.length > 2 && (
@@ -465,9 +486,15 @@ function SchedulingContent() {
                     aria-label="Select employee or team"
                   >
                     <option value="">Select employee...</option>
-                    <option value="john">John Smith</option>
-                    <option value="sarah">Sarah Johnson</option>
-                    <option value="team-a">Team A</option>
+                    {contractors.length > 0 ? (
+                      contractors.map((contractor) => (
+                        <option key={contractor.id} value={contractor.id}>
+                          {contractor.firstName} {contractor.lastName}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No employees available</option>
+                    )}
                   </select>
                 </div>
                 <div>

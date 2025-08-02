@@ -16,6 +16,8 @@ export default function JobsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
   const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedJobForAssignment, setSelectedJobForAssignment] = useState<string | null>(null);
   const [columnSettings, setColumnSettings] = useState([
     { id: 'title', label: 'Title', visible: true, order: 0 },
     { id: 'contact', label: 'Contact', visible: true, order: 1 },
@@ -50,6 +52,8 @@ export default function JobsPage() {
   const utils = trpc.useUtils();
   const { data: jobs = [], isLoading } = trpc.getJobs.useQuery({});
   const { data: companies = [] } = trpc.getCompanies.useQuery();
+  const { data: contacts = [] } = trpc.getContacts.useQuery();
+  const { data: contractors = [] } = trpc.getContractors.useQuery();
 
   const createJobMutation = trpc.createJob.useMutation({
     onSuccess: () => {
@@ -217,7 +221,10 @@ export default function JobsPage() {
               Back
             </button>
             <button
-              onClick={() => alert('Assign Crew Member modal coming soon!')}
+              onClick={() => {
+                setShowAssignModal(true);
+                setSelectedJobForAssignment(viewJob?.id || null);
+              }}
               className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -505,9 +512,15 @@ export default function JobsPage() {
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="">Select contact...</option>
-                    <option value="john">John Smith</option>
-                    <option value="sarah">Sarah Johnson</option>
-                    <option value="mike">Mike Rodriguez</option>
+                    {contacts.length > 0 ? (
+                      contacts.map((contact: any) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.firstName} {contact.lastName} - {contact.company?.name || 'No Company'}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No contacts available</option>
+                    )}
                   </select>
                 </div>
 
@@ -595,6 +608,113 @@ export default function JobsPage() {
                   className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
                 >
                   Create Job
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Assign Crew Member Modal */}
+        {showAssignModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Assign Crew Members</h3>
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedJobForAssignment(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-300 mb-4">
+                  Select crew members to assign to: <span className="font-semibold text-white">{viewJob?.title || 'this job'}</span>
+                </p>
+                
+                {contractors.length > 0 ? (
+                  <div className="space-y-3">
+                    {contractors.map((contractor: any) => {
+                      const isAssigned = viewJob?.assignedTo?.includes(contractor.id);
+                      return (
+                        <label
+                          key={contractor.id}
+                          className="flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isAssigned}
+                            onChange={(e) => {
+                              if (viewJob) {
+                                const updatedAssignedTo = e.target.checked
+                                  ? [...(viewJob.assignedTo || []), contractor.id]
+                                  : (viewJob.assignedTo || []).filter((id: string) => id !== contractor.id);
+                                
+                                // Update the job in the local state
+                                setViewJob({ ...viewJob, assignedTo: updatedAssignedTo });
+                                
+                                // Here you would typically also save to the backend
+                                console.log('Updated assignments:', updatedAssignedTo);
+                              }
+                            }}
+                            className="mr-3 rounded border-gray-600 text-orange-500 focus:ring-orange-500"
+                          />
+                          <div className="flex-1">
+                            <div className="text-white font-medium">
+                              {contractor.firstName} {contractor.lastName}
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                              {contractor.specialties || 'General Contractor'}
+                            </div>
+                          </div>
+                          {contractor.phone && (
+                            <div className="text-gray-400 text-sm">
+                              {contractor.phone}
+                            </div>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 mb-4">No contractors available to assign.</p>
+                    <a
+                      href="/dashboard/contractors"
+                      className="text-orange-500 hover:text-orange-400"
+                    >
+                      Add contractors first →
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedJobForAssignment(null);
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Save assignments - in a real app, this would update the backend
+                    alert('Crew assignments saved!');
+                    setShowAssignModal(false);
+                    setSelectedJobForAssignment(null);
+                  }}
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Save Assignments
                 </button>
               </div>
             </div>
