@@ -3,9 +3,16 @@ import { writeFile, mkdir, readFile } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 import os from 'os';
+import { put } from '@vercel/blob';
 
-// In development, use temp directory; in production, use public/uploads
+// Configure runtime for Vercel
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
+// In development, use temp directory; in production, use Vercel Blob
 const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+const useVercelBlob = isProduction && process.env.BLOB_READ_WRITE_TOKEN;
 const TEMP_DIR = path.join(os.tmpdir(), 'constructflow-uploads');
 const PUBLIC_DIR = path.join(process.cwd(), 'apps/web/public');
 const UPLOAD_DIR = isDevelopment ? TEMP_DIR : path.join(PUBLIC_DIR, 'uploads');
@@ -94,26 +101,44 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // In development, store as base64; in production, save to disk
+    // Store file based on environment
     let base64Data: string | undefined;
+    let fileUrl: string;
     
-    if (isDevelopment) {
+    if (useVercelBlob) {
+      // Use Vercel Blob in production
+      try {
+        console.log('Uploading to Vercel Blob...');
+        const blob = await put(filename, buffer, {
+          access: 'public',
+          addRandomSuffix: false,
+          contentType: file.type,
+        });
+        fileUrl = blob.url;
+        console.log('File uploaded to Vercel Blob:', fileUrl);
+      } catch (blobError) {
+        console.error('Vercel Blob upload failed:', blobError);
+        throw new Error('Failed to upload file to cloud storage');
+      }
+    } else if (isDevelopment) {
       // Store as base64 for development
       base64Data = buffer.toString('base64');
+      fileUrl = `data:${file.type};base64,${base64Data}`;
       console.log('Storing file as base64 in development mode');
     } else {
-      // Save to disk in production
+      // Fallback to local storage (not recommended for Vercel)
       const filepath = path.join(UPLOAD_DIR, filename);
       console.log('Saving file to:', filepath);
       await writeFile(filepath, buffer);
-      console.log('File saved successfully');
+      fileUrl = `/uploads/${filename}`;
+      console.log('File saved locally');
     }
 
     // Create document metadata
     const newDocument: DocumentMetadata = {
       id: timestamp.toString(),
       name: file.name,
-      filename: filename,
+      filename: useVercelBlob ? fileUrl : filename,
       size: file.size,
       type: file.type,
       uploadDate: new Date().toISOString(),
@@ -140,9 +165,7 @@ export async function POST(request: NextRequest) {
         uploadDate: newDocument.uploadDate,
         category: newDocument.category,
         status: newDocument.status,
-        url: isDevelopment && base64Data 
-          ? `data:${file.type};base64,${base64Data}`
-          : `/uploads/${filename}`
+        url: fileUrl
       }
     });
   } catch (error) {
@@ -168,9 +191,9 @@ export async function GET() {
       uploadDate: doc.uploadDate,
       category: doc.category,
       status: doc.status,
-      url: isDevelopment && doc.base64Data
+      url: doc.base64Data
         ? `data:${doc.type};base64,${doc.base64Data}`
-        : `/uploads/${doc.filename}`
+        : (useVercelBlob ? doc.filename : `/uploads/${doc.filename}`)
     }));
     
     console.log('Returning documents:', documents.length);

@@ -125,10 +125,18 @@ export default function DocumentsPage() {
             });
             
             console.log('Upload response status:', response.status);
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              console.error('Non-JSON response:', await response.text());
+              throw new Error('Server returned non-JSON response');
+            }
+            
             const data = await response.json();
             console.log('Upload response data:', data);
             
-            if (response.ok) {
+            if (response.ok && data.success) {
               successCount++;
               return data.document;
             } else {
