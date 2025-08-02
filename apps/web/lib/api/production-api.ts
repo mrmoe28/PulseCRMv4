@@ -7,6 +7,7 @@ import { z } from 'zod';
 const users = new Map<string, any>();
 const organizations = new Map<string, any>();
 const verificationTokens = new Map<string, any>();
+const jobs = new Map<string, any>();
 
 // Import real email service
 
@@ -551,8 +552,34 @@ export const appRouter = t.router({
         }).optional())
         .query(async ({ input = {} }) => {
             try {
-                // Return empty array - no demo data
-                return [];
+                // Load jobs from localStorage if in browser and jobs Map is empty
+                if (typeof window !== 'undefined' && jobs.size === 0) {
+                    const storedJobs = localStorage.getItem('jobs');
+                    if (storedJobs) {
+                        const jobsArray = JSON.parse(storedJobs);
+                        jobsArray.forEach((job: any) => {
+                            jobs.set(job.id, job);
+                        });
+                    }
+                }
+
+                // Get all jobs from the Map
+                let jobsList = Array.from(jobs.values());
+
+                // Filter by status if provided
+                if (input.status) {
+                    jobsList = jobsList.filter(job => job.status === input.status);
+                }
+
+                // Sort by creation date (newest first)
+                jobsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                // Apply limit if provided
+                if (input.limit) {
+                    jobsList = jobsList.slice(0, input.limit);
+                }
+
+                return jobsList;
             } catch (error) {
                 console.error('Get jobs error:', error);
                 throw new TRPCError({
@@ -567,10 +594,13 @@ export const appRouter = t.router({
         .input(z.object({
             title: z.string().min(1),
             description: z.string().min(1),
-            priority: z.enum(['low', 'medium', 'high']),
-            assignedTo: z.string().min(1),
+            priority: z.enum(['low', 'medium', 'high', 'urgent']),
+            assignedTo: z.string().optional(),
             dueDate: z.string(), // ISO date string
-            companyId: z.string(),
+            companyId: z.string().optional(),
+            contactId: z.string().optional(),
+            budget: z.string().optional(),
+            status: z.string().optional(),
         }))
         .mutation(async ({ input }) => {
             try {
@@ -579,16 +609,26 @@ export const appRouter = t.router({
                     id: jobId,
                     title: input.title,
                     description: input.description,
-                    status: 'pending' as const,
+                    status: input.status || 'pending',
                     priority: input.priority,
-                    assignedTo: input.assignedTo,
+                    assignedTo: input.assignedTo || '',
                     dueDate: new Date(input.dueDate),
                     createdAt: new Date(),
-                    companyId: input.companyId,
+                    updatedAt: new Date(),
+                    companyId: input.companyId || '',
+                    contactId: input.contactId || '',
+                    budget: input.budget || '',
                 };
 
-                // In a real app, this would be stored in a database
-                // For now, we'll just return the created job
+                // Store the job
+                jobs.set(jobId, job);
+
+                // Also persist to localStorage if in browser
+                if (typeof window !== 'undefined') {
+                    const jobsArray = Array.from(jobs.values());
+                    localStorage.setItem('jobs', JSON.stringify(jobsArray));
+                }
+
                 return job;
             } catch (error) {
                 console.error('Create job error:', error);

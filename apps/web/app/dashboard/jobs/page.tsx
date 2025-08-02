@@ -138,21 +138,15 @@ export default function JobsPage() {
       return;
     }
 
-    if (!companies.length) {
-      alert('No companies available. Please create a company first.');
-      return;
-    }
-
-    // Use the first available company as default
-    const companyId = companies[0].id;
-
     createJobMutation.mutate({
       title: formData.title,
       description: formData.description || '',
-      companyId: companyId,
+      contactId: formData.contactId,
       priority: formData.priority as JobPriority || 'medium',
       assignedTo: '', // TODO: Add assignee selection
       dueDate: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
+      budget: formData.budget,
+      status: formData.status,
     });
   };
 
@@ -189,6 +183,14 @@ export default function JobsPage() {
     }
     console.log("Select all jobs:", checked);
   }, [jobs]);
+
+  // Helper function to get contact name by ID
+  const getContactName = useCallback((contactId: string) => {
+    if (!contactId) return 'No Contact';
+    const contact = contacts.find((c: any) => c.id === contactId);
+    if (!contact) return 'Unknown Contact';
+    return `${contact.firstName} ${contact.lastName}`;
+  }, [contacts]);
 
   // Listen for job creation modal trigger from navigation
   useEffect(() => {
@@ -354,7 +356,7 @@ export default function JobsPage() {
                       {getVisibleColumns().map(column => (
                         <td key={column.id} className="px-6 py-4 whitespace-nowrap text-gray-300">
                           {column.id === 'title' && job.title}
-                          {column.id === 'contact' && 'Contact Name'}
+                          {column.id === 'contact' && getContactName(job.contactId)}
                           {column.id === 'status' && (
                             <span className={`px-2 py-1 text-xs rounded-full ${
                               job.status === 'completed' ? 'bg-green-900 text-green-300' :
