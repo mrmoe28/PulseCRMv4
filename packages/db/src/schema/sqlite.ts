@@ -189,8 +189,8 @@ export const documents = sqliteTable('documents', {
   orgIdx: index('documents_org_idx').on(table.organizationId),
 }));
 
-// Crew Members table - for managing construction crew
-export const crewMembers = sqliteTable('crew_members', {
+// Contractors table - for managing construction contractors
+export const contractors = sqliteTable('contractors', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   userId: text('user_id').references(() => users.id), // link to user if they have account
@@ -209,19 +209,19 @@ export const crewMembers = sqliteTable('crew_members', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 }, (table) => ({
-  nameIdx: index('crew_members_name_idx').on(table.firstName, table.lastName),
-  emailIdx: index('crew_members_email_idx').on(table.email),
-  statusIdx: index('crew_members_status_idx').on(table.status),
-  userIdx: index('crew_members_user_idx').on(table.userId),
-  orgIdx: index('crew_members_org_idx').on(table.organizationId),
+  nameIdx: index('contractors_name_idx').on(table.firstName, table.lastName),
+  emailIdx: index('contractors_email_idx').on(table.email),
+  statusIdx: index('contractors_status_idx').on(table.status),
+  userIdx: index('contractors_user_idx').on(table.userId),
+  orgIdx: index('contractors_org_idx').on(table.organizationId),
 }));
 
-// Job Assignments table - for linking crew members to jobs
+// Job Assignments table - for linking contractors to jobs
 export const jobAssignments = sqliteTable('job_assignments', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   jobId: text('job_id').notNull().references(() => jobs.id),
-  crewMemberId: text('crew_member_id').notNull().references(() => crewMembers.id),
+  contractorId: text('contractor_id').notNull().references(() => contractors.id),
   role: text('role'), // foreman, laborer, specialist, etc.
   assignedDate: text('assigned_date').notNull(), // YYYY-MM-DD format
   unassignedDate: text('unassigned_date'), // YYYY-MM-DD format
@@ -231,11 +231,11 @@ export const jobAssignments = sqliteTable('job_assignments', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 }, (table) => ({
   jobIdx: index('job_assignments_job_idx').on(table.jobId),
-  crewIdx: index('job_assignments_crew_idx').on(table.crewMemberId),
+  contractorIdx: index('job_assignments_contractor_idx').on(table.contractorId),
   roleIdx: index('job_assignments_role_idx').on(table.role),
   orgIdx: index('job_assignments_org_idx').on(table.organizationId),
   // Unique constraint for active assignments
-  uniqueActiveAssignment: uniqueIndex('job_assignments_unique_active').on(table.jobId, table.crewMemberId),
+  uniqueActiveAssignment: uniqueIndex('job_assignments_unique_active').on(table.jobId, table.contractorId),
 }));
 
 // Define relationships (same as before)
@@ -246,7 +246,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   jobs: many(jobs),
   tasks: many(tasks),
   documents: many(documents),
-  crewMembers: many(crewMembers),
+  contractors: many(contractors),
   jobAssignments: many(jobAssignments),
 }));
 
@@ -342,13 +342,13 @@ export const documentsRelations = relations(documents, ({ one }) => ({
   }),
 }));
 
-export const crewMembersRelations = relations(crewMembers, ({ one, many }) => ({
+export const contractorsRelations = relations(contractors, ({ one, many }) => ({
   organization: one(organizations, {
-    fields: [crewMembers.organizationId],
+    fields: [contractors.organizationId],
     references: [organizations.id],
   }),
   user: one(users, {
-    fields: [crewMembers.userId],
+    fields: [contractors.userId],
     references: [users.id],
   }),
   jobAssignments: many(jobAssignments),
@@ -363,8 +363,8 @@ export const jobAssignmentsRelations = relations(jobAssignments, ({ one }) => ({
     fields: [jobAssignments.jobId],
     references: [jobs.id],
   }),
-  crewMember: one(crewMembers, {
-    fields: [jobAssignments.crewMemberId],
-    references: [crewMembers.id],
+  contractor: one(contractors, {
+    fields: [jobAssignments.contractorId],
+    references: [contractors.id],
   }),
 }));
