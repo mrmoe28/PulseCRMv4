@@ -1,0 +1,36 @@
+{
+  "name": "@pulsecrm/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/migrate.js migrate",
+    "db:generate": "node scripts/migrate.js generate", 
+    "db:seed": "node scripts/migrate.js seed",
+    "db:reset": "node scripts/migrate.js reset",
+    "db:reset-seed": "node scripts/migrate.js reset-seed",
+    "db:studio": "node scripts/migrate.js studio",
+    "db:status": "node scripts/migrate.js status",
+    "db:push": "drizzle-kit push:pg",
+    "db:sqlite:generate": "drizzle-kit generate:sqlite --config=drizzle.config.sqlite.ts",
+    "db:sqlite:migrate": "drizzle-kit migrate:sqlite --config=drizzle.config.sqlite.ts",
+    "db:sqlite:studio": "drizzle-kit studio --config=drizzle.config.sqlite.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.29.1",
+    "postgres": "^3.4.3",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
+    "drizzle-kit": "^0.20.6",
+    "typescript": "^5.3.3",
+    "better-sqlite3": "^9.2.2",
+    "@types/better-sqlite3": "^7.6.8"
+  }
+}

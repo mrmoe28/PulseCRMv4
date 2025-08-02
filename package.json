@@ -1,0 +1,82 @@
+{
+  "name": "pulsecrm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modern React-based CRM dashboard for crew management with intelligent interfaces and advanced collaboration tools",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@8.10.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo run dev --filter=@pulsecrm/web",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:push": "turbo db:push",
+    "db:studio": "turbo db:studio",
+    "db:seed": "turbo db:seed",
+    "db:generate": "turbo db:generate",
+    "storybook": "turbo storybook",
+    "prepare": "husky install",
+    "docker:dev": "docker-compose -f docker/docker-compose.dev.yml up",
+    "docker:build": "docker build -f docker/prod.Dockerfile -t pulsecrm:latest .",
+    "vercel-build": "turbo build",
+    "postinstall": "turbo db:generate"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "^1.10.0",
+    "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf-viewer/default-layout": "^3.12.0",
+    "@trpc/server": "^10.45.2",
+    "@types/react": "^18.3.11",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv-cli": "^7.3.0",
+    "drizzle-orm": "^0.29.5",
+    "next": "^14.2.18",
+    "next-auth": "^4.24.11",
+    "pdfjs-dist": "^5.3.93",
+    "postgres": "^3.4.7",
+    "react": "^18.3.1",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@types/node": "^20.10.5",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.56.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "postcss": "^8.5.5",
+    "prettier": "^3.1.1",
+    "tailwindcss": "3.4.17",
+    "turbo": "^2.3.3",
+    "typescript": "^5.3.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100
+  }
+}
