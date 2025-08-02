@@ -659,6 +659,23 @@ export default function ContractorsPage() {
                       ))}
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-gray-300 text-sm mb-2">Specialties</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter specialties separated by commas (e.g., Solar, Electrical, HVAC)" 
+                      value={addForm.specialties?.join(', ') || ''} 
+                      onChange={e => {
+                        const specialties = e.target.value
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(s => s.length > 0);
+                        setAddForm(f => ({ ...f, specialties }));
+                      }} 
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400" 
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Separate multiple specialties with commas</p>
+                  </div>
                 </div>
               </div>
 
@@ -739,6 +756,18 @@ export default function ContractorsPage() {
                         ))}
                       </div>
                     </div>
+                    {viewContractor.specialties && viewContractor.specialties.length > 0 && (
+                      <div>
+                        <span className="font-medium">Specialties:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {viewContractor.specialties.map((specialty: string, index: number) => (
+                            <span key={index} className="px-2 py-1 text-xs bg-gray-700 rounded-full">
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

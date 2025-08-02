@@ -296,7 +296,7 @@ export default function DocumentSigner({ document: pdfDocument, onClose, onSign 
         >
           <div className="relative mx-auto bg-white rounded-lg shadow-lg" style={{ width: '100%', maxWidth: '800px', minHeight: '600px' }}>
             {/* PDF Viewer */}
-            <Worker workerUrl={`https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.js`}>
+            <Worker workerUrl="/pdf.worker.min.js">
               <div style={{ height: '100%', minHeight: '600px' }}>
                 <Viewer 
                   fileUrl={pdfUrl}

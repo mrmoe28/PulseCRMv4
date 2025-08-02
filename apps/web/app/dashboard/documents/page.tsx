@@ -35,6 +35,7 @@ const DOCUMENT_CATEGORIES = {
   permits: { id: 'permits', name: 'Permits', icon: '📋' },
   blueprints: { id: 'blueprints', name: 'Blueprints', icon: '📐' },
   safety: { id: 'safety', name: 'Safety Docs', icon: '⛑️' },
+  powerbills: { id: 'powerbills', name: 'Power Bills', icon: '⚡' },
 } as const;
 
 // Helper functions
@@ -53,6 +54,7 @@ function getCategoryColor(categoryId?: string): string {
     permits: 'border-purple-500 text-purple-600 dark:text-purple-400',
     blueprints: 'border-cyan-500 text-cyan-600 dark:text-cyan-400',
     safety: 'border-red-500 text-red-600 dark:text-red-400',
+    powerbills: 'border-yellow-500 text-yellow-600 dark:text-yellow-400',
   };
   return colors[categoryId as keyof typeof colors] || 'border-gray-500 text-gray-600 dark:text-gray-400';
 }
