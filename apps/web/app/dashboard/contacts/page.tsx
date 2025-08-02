@@ -12,14 +12,20 @@ interface Company {
 
 interface Contact {
   id: string;
+  contactType: 'individual' | 'company';
   firstName: string;
   lastName: string;
   title?: string;
   email?: string;
   phone?: string;
   mobile?: string;
-  companyId: string;
-  companyName: string;
+  companyId?: string;
+  companyName?: string;
+  businessName?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   isPrimary: boolean;
   notes?: string;
   isActive: boolean;
@@ -28,6 +34,7 @@ interface Contact {
 }
 
 interface ContactForm {
+  contactType: 'individual' | 'company';
   firstName: string;
   lastName: string;
   title: string;
@@ -35,6 +42,11 @@ interface ContactForm {
   phone: string;
   mobile: string;
   companyId: string;
+  businessName: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
   isPrimary: boolean;
   notes: string;
   isActive: boolean;
@@ -54,6 +66,7 @@ export default function ContactsPage() {
   const { addToast } = useToast();
 
   const [contactForm, setContactForm] = useState<ContactForm>({
+    contactType: 'individual',
     firstName: '',
     lastName: '',
     title: '',
@@ -61,6 +74,11 @@ export default function ContactsPage() {
     phone: '',
     mobile: '',
     companyId: '',
+    businessName: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
     isPrimary: false,
     notes: '',
     isActive: true,
@@ -79,6 +97,7 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([
     {
       id: 'cont-1',
+      contactType: 'company',
       firstName: 'John',
       lastName: 'Smith',
       title: 'Project Manager',
@@ -95,6 +114,7 @@ export default function ContactsPage() {
     },
     {
       id: 'cont-2',
+      contactType: 'company',
       firstName: 'Sarah',
       lastName: 'Johnson',
       title: 'Procurement Director',
@@ -111,16 +131,19 @@ export default function ContactsPage() {
     },
     {
       id: 'cont-3',
+      contactType: 'individual',
       firstName: 'Mike',
       lastName: 'Williams',
-      title: 'Operations Manager',
-      email: 'mike.w@premiercontracting.com',
+      businessName: 'Williams Home Renovation',
+      email: 'mike.williams@gmail.com',
       phone: '(555) 345-6789',
       mobile: '(555) 876-5432',
-      companyId: 'comp-3',
-      companyName: 'Premier Contracting',
+      address: '123 Main St',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62701',
       isPrimary: false,
-      notes: 'Handles day-to-day operations',
+      notes: 'Self-employed contractor',
       isActive: true,
       createdAt: '2024-02-01T09:15:00Z',
       updatedAt: '2024-02-01T09:15:00Z',
@@ -161,6 +184,7 @@ export default function ContactsPage() {
 
   const resetForm = () => {
     setContactForm({
+      contactType: 'individual',
       firstName: '',
       lastName: '',
       title: '',
@@ -168,6 +192,11 @@ export default function ContactsPage() {
       phone: '',
       mobile: '',
       companyId: '',
+      businessName: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
       isPrimary: false,
       notes: '',
       isActive: true,
@@ -183,13 +212,19 @@ export default function ContactsPage() {
   const handleEditContact = (contact: Contact) => {
     setEditingContact(contact);
     setContactForm({
+      contactType: contact.contactType,
       firstName: contact.firstName,
       lastName: contact.lastName,
       title: contact.title || '',
       email: contact.email || '',
       phone: contact.phone || '',
       mobile: contact.mobile || '',
-      companyId: contact.companyId,
+      companyId: contact.companyId || '',
+      businessName: contact.businessName || '',
+      address: contact.address || '',
+      city: contact.city || '',
+      state: contact.state || '',
+      zipCode: contact.zipCode || '',
       isPrimary: contact.isPrimary,
       notes: contact.notes || '',
       isActive: contact.isActive,
@@ -216,7 +251,8 @@ export default function ContactsPage() {
       return;
     }
 
-    if (!contactForm.companyId) {
+    // Company validation only for company contacts
+    if (contactForm.contactType === 'company' && !contactForm.companyId) {
       addToast('Please select a company', 'error');
       return;
     }
@@ -226,14 +262,18 @@ export default function ContactsPage() {
       return;
     }
 
-    const company = companies.find(c => c.id === contactForm.companyId);
-    if (!company) return;
+    let companyName = '';
+    if (contactForm.contactType === 'company' && contactForm.companyId) {
+      const company = companies.find(c => c.id === contactForm.companyId);
+      if (!company) return;
+      companyName = company.name;
 
-    // If setting as primary, unset other primary contacts for this company
-    if (contactForm.isPrimary) {
-      setContacts(prev => prev.map(c => 
-        c.companyId === contactForm.companyId ? { ...c, isPrimary: false } : c
-      ));
+      // If setting as primary, unset other primary contacts for this company
+      if (contactForm.isPrimary) {
+        setContacts(prev => prev.map(c => 
+          c.companyId === contactForm.companyId ? { ...c, isPrimary: false } : c
+        ));
+      }
     }
 
     if (editingContact) {
@@ -243,7 +283,8 @@ export default function ContactsPage() {
           ? {
               ...c,
               ...contactForm,
-              companyName: company.name,
+              companyName: contactForm.contactType === 'company' ? companyName : undefined,
+              companyId: contactForm.contactType === 'company' ? contactForm.companyId : undefined,
               updatedAt: new Date().toISOString(),
             }
           : c
@@ -254,7 +295,8 @@ export default function ContactsPage() {
       const newContact: Contact = {
         id: `cont-${Date.now()}`,
         ...contactForm,
-        companyName: company.name,
+        companyName: contactForm.contactType === 'company' ? companyName : undefined,
+        companyId: contactForm.contactType === 'company' ? contactForm.companyId : undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -493,14 +535,29 @@ export default function ContactsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="p-4 text-gray-300">{contact.companyName}</td>
+                      <td className="p-4 text-gray-300">
+                        {contact.contactType === 'individual' ? (
+                          <span className="text-blue-400">
+                            {contact.businessName || 'Individual Customer'}
+                          </span>
+                        ) : (
+                          contact.companyName
+                        )}
+                      </td>
                       <td className="p-4 text-gray-300">{contact.title || '-'}</td>
                       <td className="p-4 text-gray-300">{contact.email || '-'}</td>
                       <td className="p-4 text-gray-300">{contact.phone || '-'}</td>
                       <td className="p-4">
-                        {contact.isPrimary && (
-                          <span className="bg-orange-600 text-white px-2 py-1 rounded text-xs">Primary</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {contact.contactType === 'individual' ? (
+                            <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">Individual</span>
+                          ) : (
+                            <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">Company</span>
+                          )}
+                          {contact.contactType === 'company' && contact.isPrimary && (
+                            <span className="bg-orange-600 text-white px-2 py-1 rounded text-xs">Primary</span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -572,7 +629,11 @@ export default function ContactsPage() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-gray-300">
                       <Building className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm">{contact.companyName}</span>
+                      <span className="text-sm">
+                        {contact.contactType === 'individual' 
+                          ? (contact.businessName || 'Individual Customer')
+                          : contact.companyName}
+                      </span>
                     </div>
                     {contact.email && (
                       <div className="flex items-center text-gray-300">
@@ -590,8 +651,15 @@ export default function ContactsPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      {contact.isPrimary && (
-                        <span className="bg-orange-600 text-white px-2 py-1 rounded text-xs">Primary</span>
+                      {contact.contactType === 'individual' ? (
+                        <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">Individual</span>
+                      ) : (
+                        <>
+                          <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">Company</span>
+                          {contact.isPrimary && (
+                            <span className="bg-orange-600 text-white px-2 py-1 rounded text-xs">Primary</span>
+                          )}
+                        </>
                       )}
                       <span className={`px-2 py-1 rounded text-xs ${
                         contact.isActive ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'
@@ -645,6 +713,31 @@ export default function ContactsPage() {
 
               <form onSubmit={(e) => { e.preventDefault(); handleSaveContact(); }}>
                 <div className="space-y-6">
+                  {/* Contact Type Selection */}
+                  <div className="border-b border-gray-700 pb-4">
+                    <label className="block text-gray-300 text-sm font-medium mb-3">Contact Type</label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={contactForm.contactType === 'individual'}
+                          onChange={() => setContactForm(prev => ({ ...prev, contactType: 'individual', companyId: '', isPrimary: false }))}
+                          className="mr-2 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-white">Individual Customer</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={contactForm.contactType === 'company'}
+                          onChange={() => setContactForm(prev => ({ ...prev, contactType: 'company' }))}
+                          className="mr-2 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-white">Company Contact</span>
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Personal Information */}
                   <div>
                     <h4 className="text-white font-medium mb-4">Personal Information</h4>
@@ -720,46 +813,118 @@ export default function ContactsPage() {
                     </div>
                   </div>
 
-                  {/* Company Information */}
-                  <div>
-                    <h4 className="text-white font-medium mb-4">Company Information</h4>
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Company *
-                        </label>
-                        <select 
-                          value={contactForm.companyId} 
-                          onChange={(e) => setContactForm(prev => ({ ...prev, companyId: e.target.value }))}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-orange-500"
-                          required
+                  {/* Company Information - Only show for company contacts */}
+                  {contactForm.contactType === 'company' && (
+                    <div>
+                      <h4 className="text-white font-medium mb-4">Company Information</h4>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            Company *
+                          </label>
+                          <select 
+                            value={contactForm.companyId} 
+                            onChange={(e) => setContactForm(prev => ({ ...prev, companyId: e.target.value }))}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-orange-500"
+                            required
+                          >
+                            <option value="">Select a company...</option>
+                            {companies.map(company => (
+                              <option key={company.id} value={company.id}>{company.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCompanyModal(true)}
+                          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
                         >
-                          <option value="">Select a company...</option>
-                          {companies.map(company => (
-                            <option key={company.id} value={company.id}>{company.name}</option>
-                          ))}
-                        </select>
+                          <Plus className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowCompanyModal(true)}
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      <div className="mt-4">
+                        <label className="flex items-center text-gray-300">
+                          <input 
+                            type="checkbox" 
+                            checked={contactForm.isPrimary} 
+                            onChange={(e) => setContactForm(prev => ({ ...prev, isPrimary: e.target.checked }))}
+                            className="rounded bg-gray-600 border-gray-500 mr-2"
+                          />
+                          Set as primary contact for this company
+                        </label>
+                      </div>
                     </div>
-                    <div className="mt-4">
-                      <label className="flex items-center text-gray-300">
-                        <input 
-                          type="checkbox" 
-                          checked={contactForm.isPrimary} 
-                          onChange={(e) => setContactForm(prev => ({ ...prev, isPrimary: e.target.checked }))}
-                          className="rounded bg-gray-600 border-gray-500 mr-2"
-                        />
-                        Set as primary contact for this company
-                      </label>
+                  )}
+
+                  {/* Individual Customer Information - Only show for individual contacts */}
+                  {contactForm.contactType === 'individual' && (
+                    <div>
+                      <h4 className="text-white font-medium mb-4">Customer Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            Business Name (Optional)
+                          </label>
+                          <input 
+                            type="text" 
+                            value={contactForm.businessName} 
+                            onChange={(e) => setContactForm(prev => ({ ...prev, businessName: e.target.value }))}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                            placeholder="If self-employed or business owner"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            Street Address
+                          </label>
+                          <input 
+                            type="text" 
+                            value={contactForm.address} 
+                            onChange={(e) => setContactForm(prev => ({ ...prev, address: e.target.value }))}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            City
+                          </label>
+                          <input 
+                            type="text" 
+                            value={contactForm.city} 
+                            onChange={(e) => setContactForm(prev => ({ ...prev, city: e.target.value }))}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="flex-1">
+                            <label className="block text-gray-300 text-sm font-medium mb-2">
+                              State
+                            </label>
+                            <input 
+                              type="text" 
+                              value={contactForm.state} 
+                              onChange={(e) => setContactForm(prev => ({ ...prev, state: e.target.value }))}
+                              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                              maxLength={2}
+                              placeholder="XX"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-gray-300 text-sm font-medium mb-2">
+                              ZIP Code
+                            </label>
+                            <input 
+                              type="text" 
+                              value={contactForm.zipCode} 
+                              onChange={(e) => setContactForm(prev => ({ ...prev, zipCode: e.target.value }))}
+                              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                              placeholder="00000"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Additional Information */}
                   <div>
@@ -936,11 +1101,35 @@ export default function ContactsPage() {
                   </div>
 
                   <div>
-                    <h5 className="text-white font-medium mb-3">Company</h5>
-                    <div className="flex items-center text-gray-300">
-                      <Building className="w-4 h-4 mr-2 text-gray-500" />
-                      {viewingContact.companyName}
-                    </div>
+                    <h5 className="text-white font-medium mb-3">
+                      {viewingContact.contactType === 'individual' ? 'Customer Details' : 'Company'}
+                    </h5>
+                    {viewingContact.contactType === 'individual' ? (
+                      <div className="space-y-2">
+                        {viewingContact.businessName && (
+                          <div className="flex items-center text-gray-300">
+                            <Building className="w-4 h-4 mr-2 text-gray-500" />
+                            {viewingContact.businessName}
+                          </div>
+                        )}
+                        {viewingContact.address && (
+                          <div className="text-gray-300">
+                            <div>{viewingContact.address}</div>
+                            {(viewingContact.city || viewingContact.state || viewingContact.zipCode) && (
+                              <div>
+                                {viewingContact.city && `${viewingContact.city}, `}
+                                {viewingContact.state} {viewingContact.zipCode}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-gray-300">
+                        <Building className="w-4 h-4 mr-2 text-gray-500" />
+                        {viewingContact.companyName}
+                      </div>
+                    )}
                   </div>
                 </div>
 
