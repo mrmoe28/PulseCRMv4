@@ -1,0 +1,28 @@
+import { type Database as BetterSqlite3Database } from 'better-sqlite3';
+import * as schema from './schema';
+export declare const sqlite: BetterSqlite3Database;
+export declare const db: import("drizzle-orm/better-sqlite3").BetterSQLite3Database<typeof schema>;
+export declare function checkDatabaseConnection(): Promise<boolean>;
+export declare function closeDatabaseConnection(): Promise<void>;
+export * from './schema';
+export * from './utils/auth';
+export type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+export type Organization = typeof schema.organizations.$inferSelect;
+export type NewOrganization = typeof schema.organizations.$inferInsert;
+export type User = typeof schema.users.$inferSelect;
+export type NewUser = typeof schema.users.$inferInsert;
+export type Company = typeof schema.companies.$inferSelect;
+export type NewCompany = typeof schema.companies.$inferInsert;
+export type Contact = typeof schema.contacts.$inferSelect;
+export type NewContact = typeof schema.contacts.$inferInsert;
+export type Job = typeof schema.jobs.$inferSelect;
+export type NewJob = typeof schema.jobs.$inferInsert;
+export type Task = typeof schema.tasks.$inferSelect;
+export type NewTask = typeof schema.tasks.$inferInsert;
+export type Document = typeof schema.documents.$inferSelect;
+export type NewDocument = typeof schema.documents.$inferInsert;
+export type Contractor = typeof schema.contractors.$inferSelect;
+export type NewContractor = typeof schema.contractors.$inferInsert;
+export type JobAssignment = typeof schema.jobAssignments.$inferSelect;
+export type NewJobAssignment = typeof schema.jobAssignments.$inferInsert;
+//# sourceMappingURL=sqlite.d.ts.map

@@ -452,6 +452,50 @@ export const appRouter = t.router({
             }
         }),
 
+    // Get contacts from localStorage
+    getContacts: t.procedure
+        .query(async () => {
+            try {
+                // Check if we're in the browser
+                if (typeof window === 'undefined') {
+                    return [];
+                }
+
+                const contactsJson = localStorage.getItem('customerContacts');
+                if (!contactsJson) {
+                    return [];
+                }
+
+                const contacts = JSON.parse(contactsJson);
+                return contacts || [];
+            } catch (error) {
+                console.error('Get contacts error:', error);
+                return [];
+            }
+        }),
+
+    // Get contractors from localStorage  
+    getContractors: t.procedure
+        .query(async () => {
+            try {
+                // Check if we're in the browser
+                if (typeof window === 'undefined') {
+                    return [];
+                }
+
+                const contractorsJson = localStorage.getItem('contractors');
+                if (!contractorsJson) {
+                    return [];
+                }
+
+                const contractors = JSON.parse(contractorsJson);
+                return contractors || [];
+            } catch (error) {
+                console.error('Get contractors error:', error);
+                return [];
+            }
+        }),
+
     // Get users
     getUsers: t.procedure
         .query(async () => {

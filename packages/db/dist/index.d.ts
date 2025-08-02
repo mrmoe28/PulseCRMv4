@@ -1,0 +1,27 @@
+import * as schema from './schema';
+declare let db: any;
+declare let checkDatabaseConnection: () => Promise<boolean>;
+declare let closeDatabaseConnection: () => Promise<void>;
+export declare function initializeDatabase(): Promise<boolean>;
+export { db, checkDatabaseConnection, closeDatabaseConnection };
+export * from './schema';
+export * from './utils/auth';
+export type Organization = typeof schema.organizations.$inferSelect;
+export type NewOrganization = typeof schema.organizations.$inferInsert;
+export type User = typeof schema.users.$inferSelect;
+export type NewUser = typeof schema.users.$inferInsert;
+export type Company = typeof schema.companies.$inferSelect;
+export type NewCompany = typeof schema.companies.$inferInsert;
+export type Contact = typeof schema.contacts.$inferSelect;
+export type NewContact = typeof schema.contacts.$inferInsert;
+export type Job = typeof schema.jobs.$inferSelect;
+export type NewJob = typeof schema.jobs.$inferInsert;
+export type Task = typeof schema.tasks.$inferSelect;
+export type NewTask = typeof schema.tasks.$inferInsert;
+export type Document = typeof schema.documents.$inferSelect;
+export type NewDocument = typeof schema.documents.$inferInsert;
+export type Contractor = typeof schema.contractors.$inferSelect;
+export type NewContractor = typeof schema.contractors.$inferInsert;
+export type JobAssignment = typeof schema.jobAssignments.$inferSelect;
+export type NewJobAssignment = typeof schema.jobAssignments.$inferInsert;
+//# sourceMappingURL=index.d.ts.map
