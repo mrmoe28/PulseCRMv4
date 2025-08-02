@@ -1,11 +1,11 @@
 {
-  "buildCommand": "turbo run build --filter=@pulsecrm/web",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "ignoreCommand": "npx turbo-ignore",
+  "buildCommand": "cd .. && turbo run build --filter=@pulsecrm/web",
+  "installCommand": "cd .. && pnpm install --no-frozen-lockfile",
+  "ignoreCommand": "cd .. && npx turbo-ignore",
   "framework": "nextjs",
-  "outputDirectory": "apps/web/.next",
+  "outputDirectory": ".next",
   "functions": {
-    "apps/web/app/api/**/*.ts": {
+    "app/api/**/*.ts": {
       "maxDuration": 30
     }
   },
