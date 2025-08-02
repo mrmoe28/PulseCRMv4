@@ -52,8 +52,10 @@ export default function JobsPage() {
   const utils = trpc.useUtils();
   const { data: jobs = [], isLoading } = trpc.getJobs.useQuery({});
   const { data: companies = [] } = trpc.getCompanies.useQuery();
-  const { data: contacts = [] } = trpc.getContacts.useQuery();
-  const { data: contractors = [] } = trpc.getContractors.useQuery();
+  
+  // Load contacts and contractors from localStorage
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [contractors, setContractors] = useState<any[]>([]);
 
   const createJobMutation = trpc.createJob.useMutation({
     onSuccess: () => {
@@ -191,6 +193,29 @@ export default function JobsPage() {
     if (!contact) return 'Unknown Contact';
     return `${contact.firstName} ${contact.lastName}`;
   }, [contacts]);
+
+  // Load contacts and contractors from localStorage
+  useEffect(() => {
+    // Load contacts
+    const storedContacts = localStorage.getItem('customerContacts');
+    if (storedContacts) {
+      try {
+        setContacts(JSON.parse(storedContacts));
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+      }
+    }
+
+    // Load contractors
+    const storedContractors = localStorage.getItem('contractors');
+    if (storedContractors) {
+      try {
+        setContractors(JSON.parse(storedContractors));
+      } catch (error) {
+        console.error('Error loading contractors:', error);
+      }
+    }
+  }, []);
 
   // Listen for job creation modal trigger from navigation
   useEffect(() => {
