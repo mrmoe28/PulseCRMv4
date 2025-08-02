@@ -4,7 +4,6 @@
   "ignoreCommand": "npx turbo-ignore",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
-  "rootDirectory": "./",
   "functions": {
     "apps/web/app/api/**/*.ts": {
       "maxDuration": 30
