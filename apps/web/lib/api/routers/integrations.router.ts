@@ -30,6 +30,23 @@ export const integrationsRouter = t.router({
       // In production, query from database
       const integrations = [
         {
+          id: 'google-calendar',
+          name: 'google-calendar',
+          displayName: 'Google Calendar',
+          description: 'Sync events and deadlines with Google Calendar',
+          category: 'productivity',
+          iconEmoji: '📅',
+          color: 'bg-blue-500',
+          authType: 'oauth2',
+          features: ['Event sync', 'Two-way sync', 'Reminders', 'Availability'],
+          isActive: true,
+          isBeta: false,
+          oauthConfig: {
+            authUrl: '/api/auth/google-calendar',
+            scopes: ['https://www.googleapis.com/auth/calendar'],
+          },
+        },
+        {
           id: 'gmail',
           name: 'gmail',
           displayName: 'Gmail',

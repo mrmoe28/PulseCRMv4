@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { integrationsRouter } from './routers/integrations.router';
 import { apiKeysRouter } from './routers/apiKeys.router';
 import { webhooksRouter } from './routers/webhooks.router';
+import { googleCalendarRouter } from './routers/googleCalendar.router';
 
 // Simple in-memory storage for now - will be replaced with real DB later
 // Cleared all existing user data
@@ -21,6 +22,7 @@ export const appRouter = t.router({
     integrations: integrationsRouter,
     apiKeys: apiKeysRouter,
     webhooks: webhooksRouter,
+    googleCalendar: googleCalendarRouter,
     // Test endpoint
     hello: t.procedure
         .input(z.object({ name: z.string() }))

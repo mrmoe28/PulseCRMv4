@@ -12,6 +12,7 @@ import {
 import { useToast } from '../../../components/Toast';
 import { trpc } from '../../../providers/trpc-provider';
 import IntegrationConfigModal from '../../../components/integrations/IntegrationConfigModal';
+import GoogleCalendarConnect from '../../../components/integrations/GoogleCalendarConnect';
 
 interface Integration {
   id: string;
@@ -233,6 +234,26 @@ export default function IntegrationsPage() {
                 <Shield className="w-6 h-6" />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Featured Integration - Google Calendar */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-1">
+          <div className="bg-gray-900 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-yellow-400" />
+                <h2 className="text-xl font-bold text-white">Featured Integration</h2>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">NEW</span>
+              </div>
+            </div>
+            <GoogleCalendarConnect 
+              organizationId={organizationId}
+              onSuccess={() => {
+                refetchConnected();
+                addToast('Google Calendar connected successfully', 'success');
+              }}
+            />
           </div>
         </div>
 

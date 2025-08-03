@@ -8,6 +8,7 @@ import { useToast } from '../../../components/Toast';
 import ApiKeyModal from '../../../components/integrations/ApiKeyModal';
 import WebhookModal from '../../../components/integrations/WebhookModal';
 import IntegrationConfigModal from '../../../components/integrations/IntegrationConfigModal';
+import GoogleCalendarConnect from '../../../components/integrations/GoogleCalendarConnect';
 import { Copy, Check, Loader2, Plus, ExternalLink, Key, Webhook, Activity, BarChart3 } from 'lucide-react';
 
 export default function IntegrationsPage() {
@@ -213,6 +214,14 @@ export default function IntegrationsPage() {
   return (
     <DashboardLayout title="API & Integrations" subtitle="External service connections, webhooks, and API management">
       <div className="space-y-8">
+        {/* Google Calendar Quick Connect */}
+        <GoogleCalendarConnect 
+          organizationId={organizationId} 
+          onSuccess={() => {
+            refetchConnected();
+            addToast('Google Calendar connected successfully', 'success');
+          }}
+        />
         {/* API Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
