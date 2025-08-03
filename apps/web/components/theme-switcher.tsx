@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Palette } from 'lucide-react';
 
 const themes = [
-  { id: 'default', name: 'Professional Blue', icon: '💼', colors: { primary: '#3B82F6', secondary: '#64748B' } },
-  { id: 'purple-yellow', name: 'Purple Yellow', icon: '🎨', colors: { primary: '#9470EB', secondary: '#FACC54' } },
-  { id: 'nature', name: 'Nature Inspired', icon: '🌿', colors: { primary: '#059669', secondary: '#0EA5E9' } },
-  { id: 'vibrant', name: 'Vibrant Multi', icon: '🌈', colors: { primary: '#06B6D4', secondary: '#8B5CF6' } },
+  { id: 'default', name: 'Claude Elegant', icon: '✨', colors: { primary: '#D97F3E', secondary: '#E6E2DD' } },
+  { id: 'chatgpt', name: 'ChatGPT Modern', icon: '🤖', colors: { primary: '#74AA9C', secondary: '#AB68FF' } },
+  { id: 'monochrome', name: 'Monochrome Pro', icon: '⚫', colors: { primary: '#000000', secondary: '#FFFFFF' } },
+  { id: 'notion', name: 'Notion Clean', icon: '📝', colors: { primary: '#6B7C8F', secondary: '#F7F6F3' } },
 ];
 
-type Theme = 'default' | 'purple-yellow' | 'nature' | 'vibrant';
+type Theme = 'default' | 'chatgpt' | 'monochrome' | 'notion';
 
 export function ThemeSwitcher() {
   const [theme, setTheme] = useState<Theme>('default');
