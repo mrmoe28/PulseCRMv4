@@ -486,7 +486,7 @@ export default function DocumentsPage() {
         </div>
 
         {/* Document Categories Overview */}
-        <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {Object.values(DOCUMENT_CATEGORIES).map(category => {
             const count = documents.filter(doc => doc.category === category.id).length;
             return (
@@ -641,7 +641,7 @@ export default function DocumentsPage() {
         </div>
         ) : (
           /* Grid View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {filteredDocuments.map((doc) => {
               const category = Object.values(DOCUMENT_CATEGORIES).find(cat => cat.id === doc.category);
               

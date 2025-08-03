@@ -313,7 +313,110 @@ export default function ContractorsPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card View - Shows on small screens */}
+          <div className="block lg:hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+              {filteredContractors.map((contractor) => (
+                <div key={contractor.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  {/* Card Header */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-semibold text-white">
+                        {contractor.firstName} {contractor.lastName}
+                      </h3>
+                      {contractor.companyName && (
+                        <p className="text-sm text-gray-400">{contractor.companyName}</p>
+                      )}
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      contractor.status === 'Active' ? 'bg-green-900/50 text-green-400 border border-green-700' : 
+                      contractor.status === 'Inactive' ? 'bg-gray-900/50 text-gray-400 border border-gray-700' :
+                      'bg-red-900/50 text-red-400 border border-red-700'
+                    }`}>
+                      {contractor.status}
+                    </span>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center text-sm text-gray-300">
+                      <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <span className="truncate">{contractor.email}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-300">
+                      <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span>{contractor.phone}</span>
+                    </div>
+                  </div>
+
+                  {/* Specialties */}
+                  {contractor.specialties && contractor.specialties.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-1">
+                        {contractor.specialties.slice(0, 3).map((specialty, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs">
+                            {specialty}
+                          </span>
+                        ))}
+                        {contractor.specialties.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-700 text-gray-400 rounded text-xs">
+                            +{contractor.specialties.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer with Rate and Actions */}
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-700">
+                    <div>
+                      <span className="text-lg font-semibold text-orange-400">
+                        ${contractor.hourlyRate}
+                      </span>
+                      <span className="text-sm text-gray-400">/hr</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleViewContractor(contractor.id)}
+                        className="p-2 text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="View"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={() => handleEditContractor(contractor.id)}
+                        className="p-2 text-gray-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteContractor(contractor.id)}
+                        className="p-2 text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Table View - Hidden on mobile */}
+          <div className="hidden lg:block overflow-x-auto">
             {viewMode === 'list' && (
               <table className="w-full">
                 <thead className="bg-gray-700">
@@ -499,7 +602,7 @@ export default function ContractorsPage() {
 
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4 sm:p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-white">
                   {editContractor ? 'Edit Contractor' : 'Add Contractor'}
@@ -699,7 +802,7 @@ export default function ContractorsPage() {
 
         {viewContractor && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4 sm:p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-white">Contractor Details</h3>
                 <button

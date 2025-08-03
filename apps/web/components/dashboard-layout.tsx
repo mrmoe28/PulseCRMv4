@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import FeatureNotification from './notifications/FeatureNotification';
 import TopNavigation from './top-navigation';
+import MobileNavigation from './mobile-navigation';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -96,25 +97,40 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
-      <TopNavigation user={{
-        name: user.name || `${user.firstName} ${user.lastName}` || 'User',
-        username: user.email,
-        avatar: user.avatar,
-        role: user.role || 'User'
-      }} />
+      {/* Desktop Navigation */}
+      <div className="hidden lg:block">
+        <TopNavigation user={{
+          name: user.name || `${user.firstName} ${user.lastName}` || 'User',
+          username: user.email,
+          avatar: user.avatar,
+          role: user.role || 'User'
+        }} />
+      </div>
 
-      <main className="p-6">
+      {/* Mobile Navigation */}
+      <div className="lg:hidden">
+        <MobileNavigation user={{
+          name: user.name || `${user.firstName} ${user.lastName}` || 'User',
+          username: user.email,
+          avatar: user.avatar,
+          role: user.role || 'User'
+        }} />
+      </div>
+
+      <main className="p-4 sm:p-6 lg:p-8 max-w-[100vw] overflow-x-hidden">
         {(title || subtitle) && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             {title && (
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
             )}
             {subtitle && (
-              <p className="text-gray-500 dark:text-gray-400">{subtitle}</p>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{subtitle}</p>
             )}
           </div>
         )}
-        {children}
+        <div className="w-full">
+          {children}
+        </div>
       </main>
 
       {/* Feature Notification Popup */}
