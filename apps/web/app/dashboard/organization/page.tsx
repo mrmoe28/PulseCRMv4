@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useOrganization } from '@/providers/OrganizationContext';
+// import { useOrganization } from '@/providers/OrganizationContext'; // TODO: Enable when auth is configured
 import { Building, Users, Settings, CreditCard, Activity, Mail, UserPlus, Shield, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 
@@ -16,7 +16,18 @@ interface TeamMember {
 }
 
 export default function OrganizationPage() {
-  const { currentOrganization, userRole } = useOrganization();
+  // TODO: Re-enable when auth is configured
+  // const { currentOrganization, userRole } = useOrganization();
+  
+  // Mock data for now - replace with real data when auth is configured
+  const currentOrganization = {
+    name: 'Demo Organization',
+    website: '',
+    industry: '',
+    size: 'small'
+  };
+  const userRole = 'owner'; // Default to owner for demo
+  
   const { addToast, ToastContainer } = useToast();
   const [activeTab, setActiveTab] = useState<'general' | 'team' | 'billing' | 'activity'>('general');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
