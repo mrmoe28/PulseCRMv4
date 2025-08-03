@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signatureRequests } from '../send/route';
+
+// Access global signature requests storage
+declare global {
+  var signatureRequests: Map<string, any> | undefined;
+}
+
+// Initialize if not exists
+if (!global.signatureRequests) {
+  global.signatureRequests = new Map<string, any>();
+}
+
+const signatureRequests = global.signatureRequests;
 
 export async function GET(
   request: NextRequest,
@@ -44,7 +55,7 @@ export async function GET(
       signatureRequest.auditTrail.push({
         action: 'Document viewed by signer',
         timestamp: new Date(),
-        ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || undefined,
       });
     }

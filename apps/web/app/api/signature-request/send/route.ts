@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import nodemailer from 'nodemailer';
 
-// In-memory storage for signature requests (replace with database in production)
-const signatureRequests = new Map<string, SignatureRequest>();
+// Global storage for signature requests
+// NOTE: In production, use a database (PostgreSQL, Redis, Vercel KV, etc.)
+// This in-memory storage will only persist within the same serverless function instance
+declare global {
+  var signatureRequests: Map<string, any> | undefined;
+}
+
+// Initialize if not exists
+if (!global.signatureRequests) {
+  global.signatureRequests = new Map<string, any>();
+}
+
+const signatureRequests = global.signatureRequests;
 
 interface SignatureRequest {
   id: string;
@@ -31,7 +42,7 @@ interface AuditEntry {
 }
 
 // Configure email transporter
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
@@ -83,7 +94,7 @@ export async function POST(request: NextRequest) {
         {
           action: 'Signature request created',
           timestamp: new Date(),
-          ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         },
       ],
     };
@@ -288,7 +299,7 @@ export async function POST(request: NextRequest) {
     signatureRequest.auditTrail.push({
       action: 'Signature request email sent',
       timestamp: new Date(),
-      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
     });
 
     return NextResponse.json({
@@ -308,6 +319,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export for use in other routes
-export { signatureRequests };

@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import nodemailer from 'nodemailer';
-import { signatureRequests } from '../send/route';
+
+// Access global signature requests storage
+declare global {
+  var signatureRequests: Map<string, any> | undefined;
+}
+
+// Initialize if not exists
+if (!global.signatureRequests) {
+  global.signatureRequests = new Map<string, any>();
+}
+
+const signatureRequests = global.signatureRequests;
 
 // Configure email transporter
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
@@ -54,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Record signature
-    const ipAddress = request.headers.get('x-forwarded-for') || request.ip;
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || '';
     
     signatureRequest.status = 'signed';
@@ -169,7 +180,7 @@ export async function POST(request: NextRequest) {
             <p>A copy of the signed document is attached to this email for your records.</p>
             <p><strong>Audit Trail:</strong></p>
             <ul>
-              ${signatureRequest.auditTrail.map(entry => 
+              ${signatureRequest.auditTrail.map((entry: any) => 
                 `<li>${entry.action} - ${new Date(entry.timestamp).toLocaleString()}</li>`
               ).join('')}
             </ul>
