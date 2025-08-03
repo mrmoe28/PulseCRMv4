@@ -10,6 +10,9 @@ export async function GET(req: NextRequest) {
     const organizationId = searchParams.get('organizationId');
     const userId = searchParams.get('userId');
     const returnUrl = searchParams.get('returnUrl') || '/settings/integrations';
+    
+    // Get the base URL for constructing absolute URLs
+    const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
 
     if (!organizationId || !userId) {
       return NextResponse.json(
@@ -21,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Check if we have Google OAuth credentials
     const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3010'}/api/integrations/google/callback`;
+      `${process.env.NEXTAUTH_URL || baseUrl}/api/integrations/google/callback`;
 
     if (!clientId) {
       // Always use demo mode when credentials are not configured
@@ -30,9 +33,13 @@ export async function GET(req: NextRequest) {
         ? 'Google Calendar connected (Demo Mode - Add GOOGLE_CALENDAR_CLIENT_ID for production)'
         : 'Google Calendar connected (Demo Mode)';
       
-      return NextResponse.redirect(
-        `${returnUrl}?integration=google-calendar&status=demo-connected&message=${encodeURIComponent(message)}`
-      );
+      // Construct absolute URL for redirect
+      const redirectUrl = new URL(returnUrl, baseUrl);
+      redirectUrl.searchParams.set('integration', 'google-calendar');
+      redirectUrl.searchParams.set('status', 'demo-connected');
+      redirectUrl.searchParams.set('message', message);
+      
+      return NextResponse.redirect(redirectUrl.toString());
     }
 
     // Generate state token for CSRF protection

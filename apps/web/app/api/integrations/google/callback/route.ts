@@ -13,19 +13,24 @@ export async function GET(req: NextRequest) {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
+    
+    // Get the base URL for constructing absolute URLs
+    const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
 
     // Handle OAuth errors
     if (error) {
       console.error('Google OAuth error:', error);
-      return NextResponse.redirect(
-        `/settings/integrations?error=oauth_failed&message=${encodeURIComponent(error)}`
-      );
+      const errorUrl = new URL('/settings/integrations', baseUrl);
+      errorUrl.searchParams.set('error', 'oauth_failed');
+      errorUrl.searchParams.set('message', error);
+      return NextResponse.redirect(errorUrl.toString());
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(
-        '/settings/integrations?error=missing_params&message=Missing authorization code or state'
-      );
+      const errorUrl = new URL('/settings/integrations', baseUrl);
+      errorUrl.searchParams.set('error', 'missing_params');
+      errorUrl.searchParams.set('message', 'Missing authorization code or state');
+      return NextResponse.redirect(errorUrl.toString());
     }
 
     // For development/demo mode without real OAuth
@@ -42,17 +47,20 @@ export async function GET(req: NextRequest) {
       // Store for demo purposes
       tokenStorage.set('demo_org', mockTokens);
 
-      return NextResponse.redirect(
-        '/settings/integrations?integration=google-calendar&status=connected&message=Google Calendar connected successfully'
-      );
+      const successUrl = new URL('/settings/integrations', baseUrl);
+      successUrl.searchParams.set('integration', 'google-calendar');
+      successUrl.searchParams.set('status', 'connected');
+      successUrl.searchParams.set('message', 'Google Calendar connected successfully');
+      return NextResponse.redirect(successUrl.toString());
     }
 
     // Verify state token (CSRF protection)
     const stateData = stateTokens.get(state);
     if (!stateData) {
-      return NextResponse.redirect(
-        '/settings/integrations?error=invalid_state&message=Invalid or expired state token'
-      );
+      const errorUrl = new URL('/settings/integrations', baseUrl);
+      errorUrl.searchParams.set('error', 'invalid_state');
+      errorUrl.searchParams.set('message', 'Invalid or expired state token');
+      return NextResponse.redirect(errorUrl.toString());
     }
 
     // Clean up used state token
@@ -67,9 +75,10 @@ export async function GET(req: NextRequest) {
       `${process.env.NEXTAUTH_URL || 'http://localhost:3010'}/api/integrations/google/callback`;
 
     if (!clientSecret) {
-      return NextResponse.redirect(
-        '/settings/integrations?error=config_error&message=Google Calendar client secret not configured'
-      );
+      const errorUrl = new URL('/settings/integrations', baseUrl);
+      errorUrl.searchParams.set('error', 'config_error');
+      errorUrl.searchParams.set('message', 'Google Calendar client secret not configured');
+      return NextResponse.redirect(errorUrl.toString());
     }
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -89,9 +98,10 @@ export async function GET(req: NextRequest) {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error('Token exchange failed:', errorData);
-      return NextResponse.redirect(
-        '/settings/integrations?error=token_exchange_failed&message=Failed to exchange authorization code'
-      );
+      const errorUrl = new URL('/settings/integrations', baseUrl);
+      errorUrl.searchParams.set('error', 'token_exchange_failed');
+      errorUrl.searchParams.set('message', 'Failed to exchange authorization code');
+      return NextResponse.redirect(errorUrl.toString());
     }
 
     const tokens = await tokenResponse.json();
@@ -128,14 +138,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Redirect back to integrations page with success message
-    return NextResponse.redirect(
-      '/settings/integrations?integration=google-calendar&status=connected&message=Google Calendar connected successfully'
-    );
+    const successUrl = new URL('/settings/integrations', baseUrl);
+    successUrl.searchParams.set('integration', 'google-calendar');
+    successUrl.searchParams.set('status', 'connected');
+    successUrl.searchParams.set('message', 'Google Calendar connected successfully');
+    return NextResponse.redirect(successUrl.toString());
   } catch (error) {
     console.error('Google Calendar callback error:', error);
-    return NextResponse.redirect(
-      '/settings/integrations?error=callback_error&message=Failed to complete Google Calendar connection'
-    );
+    const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
+    const errorUrl = new URL('/settings/integrations', baseUrl);
+    errorUrl.searchParams.set('error', 'callback_error');
+    errorUrl.searchParams.set('message', 'Failed to complete Google Calendar connection');
+    return NextResponse.redirect(errorUrl.toString());
   }
 }
 
