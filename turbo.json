@@ -20,7 +20,13 @@
         "NEXT_PUBLIC_APP_URL",
         "NEXT_PUBLIC_API_URL",
         "VERCEL_URL",
-        "VERCEL_ENV"
+        "VERCEL_ENV",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "APP_URL",
+        "BLOB_READ_WRITE_TOKEN",
+        "TURBO_REMOTE_ONLY",
+        "TURBO_RUN_SUMMARY"
       ],
       "cache": true
     },
@@ -87,6 +93,12 @@
     "POSTGRES_HOST",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
-    "POSTGRES_DATABASE"
+    "POSTGRES_DATABASE",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "APP_URL",
+    "BLOB_READ_WRITE_TOKEN",
+    "TURBO_REMOTE_ONLY",
+    "TURBO_RUN_SUMMARY"
   ]
 }

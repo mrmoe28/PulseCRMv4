@@ -25,23 +25,6 @@
     "vercel-build": "turbo build"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.10.0",
-    "@react-pdf-viewer/core": "^3.12.0",
-    "@react-pdf-viewer/default-layout": "^3.12.0",
-    "@trpc/server": "^10.45.2",
-    "@types/react": "^18.3.11",
-    "@vercel/analytics": "^1.5.0",
-    "@vercel/speed-insights": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "dotenv-cli": "^7.3.0",
-    "drizzle-orm": "^0.29.5",
-    "next": "^14.2.18",
-    "next-auth": "^4.24.11",
-    "pdfjs-dist": "^5.3.93",
-    "postgres": "^3.4.7",
-    "react": "^18.3.1",
-    "tailwind-merge": "^3.3.1",
     "turbo": "^2.3.3"
   },
   "devDependencies": {

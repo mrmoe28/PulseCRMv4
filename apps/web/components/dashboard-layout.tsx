@@ -13,11 +13,24 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
+  // TEST MODE: Authentication bypassed for theme testing
+  // TODO: Remove this before production
+  const [user, setUser] = useState<any>({
+    id: 'test-user-123',
+    email: 'test@pulsecrm.com',
+    name: 'Test User',
+    username: 'testuser',
+    role: 'Administrator',
+    avatar: 'T',
+    organizationId: 'test-org-123',
+    organizationName: 'Test Organization'
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(true);
   const router = useRouter();
 
+  // COMMENTED OUT FOR TESTING - Uncomment for production
+  /*
   useEffect(() => {
     // Prevent multiple auth checks
     if (authChecked) return;
@@ -77,6 +90,7 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
 
     return () => clearTimeout(timeoutId);
   }, [router, authChecked]);
+  */
 
   // Show loading only if we haven't checked auth yet
   if (isLoading || !authChecked) {

@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd .. && turbo run build --filter=@pulsecrm/web",
-  "installCommand": "cd .. && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd .. && pnpm install --no-frozen-lockfile && turbo run build --filter=@pulsecrm/web --force",
+  "installCommand": "echo 'Skipping install - handled in buildCommand'",
   "ignoreCommand": "cd .. && npx turbo-ignore",
   "framework": "nextjs",
   "outputDirectory": ".next",
