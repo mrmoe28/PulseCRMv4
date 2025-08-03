@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FileText, CheckCircle, AlertCircle, Shield, Clock, User } from 'lucide-react';
+import { EmailService } from '@/lib/email-service';
 
 interface SignatureRequest {
   id: string;
@@ -44,6 +45,35 @@ export default function SignaturePage() {
 
   const fetchSignatureRequest = async () => {
     try {
+      // First try to get from client-side storage
+      const emailService = EmailService.getInstance();
+      const storedRequest = emailService.getSignatureRequest(token);
+      
+      if (storedRequest) {
+        // Check if expired
+        if (new Date() > new Date(storedRequest.expiresAt)) {
+          setError('This signature request has expired');
+          setLoading(false);
+          return;
+        }
+        
+        setSignatureRequest({
+          id: storedRequest.documentId,
+          documentName: storedRequest.documentName,
+          documentUrl: storedRequest.documentUrl,
+          signerName: storedRequest.signerName,
+          signerEmail: storedRequest.signerEmail,
+          requestedBy: storedRequest.requestedBy,
+          requestedAt: storedRequest.requestedAt,
+          expiresAt: storedRequest.expiresAt,
+          status: storedRequest.status,
+        });
+        setSignature(storedRequest.signerName);
+        setLoading(false);
+        return;
+      }
+      
+      // Fall back to API if not in client storage
       const response = await fetch(`/api/signature-request/${token}`);
       const data = await response.json();
 
@@ -165,6 +195,42 @@ export default function SignaturePage() {
           </div>
         </div>
       </div>
+
+      {/* Sender/Recipient Bar */}
+      {signatureRequest && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+          <div className="max-w-6xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-center space-x-8">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {signatureRequest.requestedBy.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">From</div>
+                  <div className="font-medium text-gray-900">{signatureRequest.requestedBy}</div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {signatureRequest.signerName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">To</div>
+                  <div className="font-medium text-gray-900">{signatureRequest.signerName}</div>
+                  <div className="text-xs text-gray-500">{signatureRequest.signerEmail}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">

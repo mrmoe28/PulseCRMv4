@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, Send, LayoutGrid, LayoutList } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, Send, LayoutGrid, LayoutList, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import DocumentViewer from '@/components/DocumentViewer';
+import { EmailService } from '@/lib/email-service';
 
 // Dynamic import to avoid SSR issues
 const DocumentSigner = dynamic(() => import('@/components/DocumentSigner'), {
@@ -61,6 +63,7 @@ function getCategoryColor(categoryId?: string): string {
 
 export default function DocumentsPage() {
   const { addToast, ToastContainer } = useToast();
+  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -79,6 +82,7 @@ export default function DocumentsPage() {
     signerEmail: '',
     message: '',
   });
+  const [signingRecipient, setSigningRecipient] = useState<{ name: string; email: string } | null>(null);
 
   // Load documents on mount
   useEffect(() => {
@@ -221,23 +225,19 @@ export default function DocumentsPage() {
     }
 
     try {
-      const response = await fetch('/api/signature-request/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentId: sendingForSignature.id,
-          documentName: sendingForSignature.name,
-          documentUrl: sendingForSignature.url,
-          signerEmail: signatureFormData.signerEmail,
-          signerName: signatureFormData.signerName,
-          message: signatureFormData.message,
-          requestedBy: 'PulseCRM User', // In production, get from session
-        }),
+      // Use client-side EmailService
+      const emailService = EmailService.getInstance();
+      const result = await emailService.sendSignatureRequest({
+        documentId: sendingForSignature.id,
+        documentName: sendingForSignature.name,
+        documentUrl: sendingForSignature.url,
+        signerEmail: signatureFormData.signerEmail,
+        signerName: signatureFormData.signerName,
+        message: signatureFormData.message,
+        requestedBy: 'PulseCRM User', // In production, get from session
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         addToast(`Signature request sent to ${signatureFormData.signerEmail}`, 'success');
         setSendingForSignature(null);
         setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
@@ -250,10 +250,21 @@ export default function DocumentsPage() {
               : doc
           )
         );
+      } else if (result.fallbackUrl) {
+        // Show fallback option
+        const useFallback = confirm(
+          `${result.error}\n\nWould you like to send the signature request using your email client instead?`
+        );
+        
+        if (useFallback) {
+          window.location.href = result.fallbackUrl;
+          addToast('Opening your email client...', 'info');
+        }
       } else {
-        addToast(data.error || 'Failed to send signature request', 'error');
+        addToast(result.error || 'Failed to send signature request', 'error');
       }
     } catch (error) {
+      console.error('Error sending signature request:', error);
       addToast('Failed to send signature request', 'error');
     }
   };
@@ -309,6 +320,14 @@ export default function DocumentsPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-sm font-medium">Back to Dashboard</span>
+              </button>
+              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
               <FileText className="h-6 w-6 text-gray-700 dark:text-gray-300" />
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Document Management</h1>
             </div>
@@ -531,14 +550,27 @@ export default function DocumentsPage() {
                           {doc.type === 'application/pdf' && doc.status !== 'signed' && doc.status !== 'completed' && (
                             <>
                               <button
-                                onClick={() => setSigningDocument(doc)}
+                                onClick={() => {
+                                  setSigningDocument(doc);
+                                  // If document has pending signature status, we might have recipient info
+                                  // For now, we'll set demo recipient info for demonstration
+                                  if (doc.status === 'pending_signature') {
+                                    setSigningRecipient({ name: 'John Doe', email: 'john.doe@example.com' });
+                                  } else {
+                                    setSigningRecipient(null);
+                                  }
+                                }}
                                 className="p-2 text-gray-500 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
                                 title="Sign Document"
                               >
                                 <PenTool className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setSendingForSignature(doc)}
+                                onClick={() => {
+                                  setSendingForSignature(doc);
+                                  // Reset form when opening modal
+                                  setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+                                }}
                                 className="p-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
                                 title="Send for Signature"
                               >
@@ -632,14 +664,27 @@ export default function DocumentsPage() {
                     {doc.type === 'application/pdf' && doc.status !== 'signed' && doc.status !== 'completed' && (
                       <>
                         <button
-                          onClick={() => setSigningDocument(doc)}
+                          onClick={() => {
+                            setSigningDocument(doc);
+                            // If document has pending signature status, we might have recipient info
+                            // For now, we'll set demo recipient info for demonstration
+                            if (doc.status === 'pending_signature') {
+                              setSigningRecipient({ name: 'John Doe', email: 'john.doe@example.com' });
+                            } else {
+                              setSigningRecipient(null);
+                            }
+                          }}
                           className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                           title="Sign"
                         >
                           <PenTool className="w-4 h-4 mx-auto" />
                         </button>
                         <button
-                          onClick={() => setSendingForSignature(doc)}
+                          onClick={() => {
+                            setSendingForSignature(doc);
+                            // Reset form when opening modal
+                            setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+                          }}
                           className="flex-1 p-2 text-gray-600 dark:text-gray-400 hover:text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                           title="Send"
                         >
@@ -705,7 +750,12 @@ export default function DocumentsPage() {
       {signingDocument && (
         <DocumentSigner
           document={signingDocument}
-          onClose={() => setSigningDocument(null)}
+          recipientName={signingRecipient?.name}
+          recipientEmail={signingRecipient?.email}
+          onClose={() => {
+            setSigningDocument(null);
+            setSigningRecipient(null);
+          }}
           onSign={(docId, signatures) => {
             // Update document status
             setDocuments(prev => prev.map(doc => 
@@ -714,6 +764,7 @@ export default function DocumentsPage() {
                 : doc
             ));
             addToast('Document signed successfully!', 'success');
+            setSigningRecipient(null);
           }}
         />
       )}
@@ -784,6 +835,21 @@ export default function DocumentsPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Send Document for Signature
             </h3>
+            
+            {/* Sender Info */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  P
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">From</div>
+                  <div className="font-medium text-gray-900 dark:text-white">PulseCRM User</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">You are sending this document</div>
+                </div>
+              </div>
+            </div>
+            
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Send "{sendingForSignature.name}" to be electronically signed
             </p>

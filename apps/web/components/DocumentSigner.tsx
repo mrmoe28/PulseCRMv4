@@ -16,6 +16,8 @@ interface DocumentSignerProps {
   };
   onClose: () => void;
   onSign?: (documentId: string, signatures: SignatureData[]) => void;
+  recipientEmail?: string;
+  recipientName?: string;
 }
 
 interface SignatureData {
@@ -44,7 +46,7 @@ const SIGNATURE_FONTS = [
   { name: 'Roboto Slab', value: 'Roboto Slab, serif' }
 ];
 
-export default function DocumentSigner({ document: pdfDocument, onClose, onSign }: DocumentSignerProps) {
+export default function DocumentSigner({ document: pdfDocument, onClose, onSign, recipientEmail, recipientName }: DocumentSignerProps) {
   const { addToast } = useToast();
   const [signatureMode, setSignatureMode] = useState<'type' | 'upload'>('type');
   const [typedName, setTypedName] = useState('');
@@ -269,22 +271,53 @@ export default function DocumentSigner({ document: pdfDocument, onClose, onSign 
     <div className="fixed inset-0 z-50 bg-black/90 flex">
       {/* Document Preview */}
       <div className="flex-1 flex flex-col">
-        <div className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-gray-400" />
-            <h3 className="text-lg font-semibold text-white">{pdfDocument.name}</h3>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <span>Page {currentPage} of {numPages || '...'}</span>
+        <div className="bg-gray-900 border-b border-gray-700">
+          {/* Sender/Recipient Info Bar */}
+          {(recipientEmail || recipientName) && (
+            <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 px-4 py-2 border-b border-gray-700">
+              <div className="flex items-center justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    You
+                  </div>
+                  <span className="text-gray-300">Sender</span>
+                </div>
+                <div className="flex items-center gap-1 text-gray-500">
+                  <div className="w-6 h-px bg-gray-600"></div>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <div className="w-6 h-px bg-gray-600"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    {recipientName ? recipientName.charAt(0).toUpperCase() : 'R'}
+                  </div>
+                  <div>
+                    <span className="text-gray-300">{recipientName || 'Recipient'}</span>
+                    {recipientEmail && <div className="text-xs text-gray-500">{recipientEmail}</div>}
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={() => window.open(pdfUrl, '_blank')}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
-              title="Open in new tab"
-            >
-              <Download className="h-5 w-5" />
-            </button>
+          )}
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-gray-400" />
+              <h3 className="text-lg font-semibold text-white">{pdfDocument.name}</h3>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>Page {currentPage} of {numPages || '...'}</span>
+              </div>
+              <button
+                onClick={() => window.open(pdfUrl, '_blank')}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+                title="Open in new tab"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
         
@@ -348,7 +381,7 @@ export default function DocumentSigner({ document: pdfDocument, onClose, onSign 
         <div className="p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-1">Sign Document</h3>
           <p className="text-sm text-gray-400">
-            Create your signature and place it on the document
+            {recipientName ? `Preparing signature for ${recipientName}` : 'Create your signature and place it on the document'}
           </p>
         </div>
 

@@ -54,6 +54,18 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if SMTP is configured
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.warn('SMTP credentials not configured. Email will not be sent.');
+      return NextResponse.json(
+        { 
+          error: 'Email service not configured. Please set up SMTP credentials in environment variables.',
+          details: 'Add SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS to your .env file'
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const {
       documentId,

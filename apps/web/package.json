@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.10.0",
+    "@emailjs/browser": "^4.4.1",
     "@fileforge/pdfreader": "^0.1.46",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
     "@react-pdf-viewer/core": "^3.12.0",
