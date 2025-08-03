@@ -1,7 +1,6 @@
 import { compare } from "bcryptjs";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
 
 // Import mock data (in production, this would be database calls)
 const mockUsers: any[] = [];
@@ -70,10 +69,6 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 }
             }
-        }),
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID || "",
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
         }),
     ],
     session: {
