@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Download, ExternalLink, FileText, Loader } from 'lucide-react';
+import { X, Download, ExternalLink, FileText, Loader, Send } from 'lucide-react';
 
 interface PDFViewerProps {
   document: {
@@ -11,9 +11,10 @@ interface PDFViewerProps {
     file?: File;
   };
   onClose: () => void;
+  onSendForSignature?: () => void;
 }
 
-export default function PDFViewer({ document, onClose }: PDFViewerProps) {
+export default function PDFViewer({ document, onClose, onSendForSignature }: PDFViewerProps) {
   const [pdfUrl, setPdfUrl] = useState<string>(document.url);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +94,18 @@ export default function PDFViewer({ document, onClose }: PDFViewerProps) {
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Send for Signature Button */}
+          {onSendForSignature && (
+            <button
+              onClick={onSendForSignature}
+              className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+              title="Send for Signature"
+            >
+              <Send className="h-4 w-4" />
+              Send for Signature
+            </button>
+          )}
+          
           {/* Open in New Tab */}
           <button
             onClick={openInNewTab}

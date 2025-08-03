@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, Send, LayoutGrid, LayoutList, ArrowLeft, AlertCircle } from 'lucide-react';
+import { FileText, Upload, Download, Trash2, Search, Filter, FolderPlus, FolderOpen, Eye, PenTool, Send, LayoutGrid, LayoutList, ArrowLeft, AlertCircle, Copy, Mail, MessageCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import DocumentViewer from '@/components/DocumentViewer';
-import { EmailService } from '@/lib/email-service';
 
 // Dynamic import to avoid SSR issues
 const DocumentSigner = dynamic(() => import('@/components/DocumentSigner'), {
@@ -83,6 +82,9 @@ export default function DocumentsPage() {
     message: '',
   });
   const [signingRecipient, setSigningRecipient] = useState<{ name: string; email: string } | null>(null);
+  const [shareMethod, setShareMethod] = useState<'email' | 'link' | 'whatsapp'>('email');
+  const [signatureLink, setSignatureLink] = useState<string>('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Load documents on mount
   useEffect(() => {
@@ -219,28 +221,54 @@ export default function DocumentsPage() {
   };
 
   const handleSendForSignature = async () => {
-    if (!sendingForSignature || !signatureFormData.signerName || !signatureFormData.signerEmail) {
-      addToast('Please fill in all required fields', 'error');
+    if (!sendingForSignature || !signatureFormData.signerName) {
+      addToast('Please enter the signer\'s name', 'error');
+      return;
+    }
+
+    if (shareMethod === 'email' && !signatureFormData.signerEmail) {
+      addToast('Please enter the signer\'s email', 'error');
       return;
     }
 
     try {
-      // Use client-side EmailService
-      const emailService = EmailService.getInstance();
-      const result = await emailService.sendSignatureRequest({
-        documentId: sendingForSignature.id,
-        documentName: sendingForSignature.name,
-        documentUrl: sendingForSignature.url,
-        signerEmail: signatureFormData.signerEmail,
-        signerName: signatureFormData.signerName,
-        message: signatureFormData.message,
-        requestedBy: 'PulseCRM User', // In production, get from session
+      const response = await fetch('/api/signature-request/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: sendingForSignature.id,
+          documentName: sendingForSignature.name,
+          documentUrl: sendingForSignature.url,
+          signerEmail: signatureFormData.signerEmail || 'noemail@placeholder.com',
+          signerName: signatureFormData.signerName,
+          message: signatureFormData.message,
+          requestedBy: 'PulseCRM User', // In production, get from session
+        }),
       });
 
-      if (result.success) {
-        addToast(`Signature request sent to ${signatureFormData.signerEmail}`, 'success');
-        setSendingForSignature(null);
-        setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+      const data = await response.json();
+
+      if (response.ok) {
+        setSignatureLink(data.signatureUrl);
+        
+        if (shareMethod === 'email' && data.emailSent) {
+          addToast(`Signature request sent to ${signatureFormData.signerEmail}`, 'success');
+          setSendingForSignature(null);
+          setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+          setSignatureLink('');
+        } else if (shareMethod === 'link') {
+          // Copy link to clipboard
+          navigator.clipboard.writeText(data.signatureUrl);
+          setLinkCopied(true);
+          setTimeout(() => setLinkCopied(false), 3000);
+          addToast('Signature link copied to clipboard!', 'success');
+        } else if (shareMethod === 'whatsapp') {
+          // Open WhatsApp with pre-filled message
+          const message = `Hello ${signatureFormData.signerName},\n\nPlease sign this document: ${sendingForSignature.name}\n\n${signatureFormData.message ? signatureFormData.message + '\n\n' : ''}Click here to sign: ${data.signatureUrl}`;
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          addToast('Opening WhatsApp...', 'info');
+        }
         
         // Update document status
         setDocuments(prev =>
@@ -250,22 +278,21 @@ export default function DocumentsPage() {
               : doc
           )
         );
-      } else if (result.fallbackUrl) {
-        // Show fallback option
-        const useFallback = confirm(
-          `${result.error}\n\nWould you like to send the signature request using your email client instead?`
-        );
-        
-        if (useFallback) {
-          window.location.href = result.fallbackUrl;
-          addToast('Opening your email client...', 'info');
-        }
       } else {
-        addToast(result.error || 'Failed to send signature request', 'error');
+        addToast(data.error || 'Failed to create signature request', 'error');
       }
     } catch (error) {
       console.error('Error sending signature request:', error);
-      addToast('Failed to send signature request', 'error');
+      addToast('Failed to create signature request', 'error');
+    }
+  };
+
+  const copySignatureLink = () => {
+    if (signatureLink) {
+      navigator.clipboard.writeText(signatureLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 3000);
+      addToast('Link copied to clipboard!', 'success');
     }
   };
 
@@ -743,6 +770,11 @@ export default function DocumentsPage() {
         <DocumentViewer
           document={viewingDocument}
           onClose={() => setViewingDocument(null)}
+          onSendForSignature={() => {
+            setSendingForSignature(viewingDocument);
+            setViewingDocument(null);
+            setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+          }}
         />
       )}
       
@@ -831,28 +863,58 @@ export default function DocumentsPage() {
       {/* Send for Signature Modal */}
       {sendingForSignature && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Send Document for Signature
             </h3>
             
-            {/* Sender Info */}
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  P
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">From</div>
-                  <div className="font-medium text-gray-900 dark:text-white">PulseCRM User</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">You are sending this document</div>
-                </div>
-              </div>
-            </div>
-            
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Send "{sendingForSignature.name}" to be electronically signed
             </p>
+            
+            {/* Share Method Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                How would you like to share?
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => setShareMethod('email')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    shareMethod === 'email'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <Mail className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-medium">Email</span>
+                </button>
+                
+                <button
+                  onClick={() => setShareMethod('link')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    shareMethod === 'link'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <Copy className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium">Copy Link</span>
+                </button>
+                
+                <button
+                  onClick={() => setShareMethod('whatsapp')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    shareMethod === 'whatsapp'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <MessageCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium">WhatsApp</span>
+                </button>
+              </div>
+            </div>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -868,18 +930,20 @@ export default function DocumentsPage() {
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Signer's Email *
-                </label>
-                <input
-                  type="email"
-                  value={signatureFormData.signerEmail}
-                  onChange={(e) => setSignatureFormData({ ...signatureFormData, signerEmail: e.target.value })}
-                  placeholder="john@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+              {shareMethod === 'email' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Signer's Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={signatureFormData.signerEmail}
+                    onChange={(e) => setSignatureFormData({ ...signatureFormData, signerEmail: e.target.value })}
+                    placeholder="john@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -895,13 +959,41 @@ export default function DocumentsPage() {
               </div>
             </div>
             
+            {/* Generated Link Display */}
+            {signatureLink && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+                      Signature link created!
+                    </p>
+                    <div className="bg-white dark:bg-gray-800 rounded p-2 text-xs text-gray-600 dark:text-gray-400 break-all mb-2">
+                      {signatureLink}
+                    </div>
+                    <button
+                      onClick={copySignatureLink}
+                      className="text-sm text-green-700 dark:text-green-400 hover:underline flex items-center gap-1"
+                    >
+                      <Copy className="h-3 w-3" />
+                      {linkCopied ? 'Copied!' : 'Copy link'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-6">
               <p className="text-sm text-blue-800 dark:text-blue-300">
-                <strong>📧 What happens next:</strong><br />
-                • The signer will receive an email with a secure link<br />
-                • They can review and sign the document online<br />
-                • You'll be notified when the document is signed<br />
-                • The signature request expires in 7 days
+                <strong>
+                  {shareMethod === 'email' && '📧 Email: '}
+                  {shareMethod === 'link' && '🔗 Link: '}
+                  {shareMethod === 'whatsapp' && '💬 WhatsApp: '}
+                </strong>
+                {shareMethod === 'email' && 'The signer will receive an email with a secure link'}
+                {shareMethod === 'link' && 'Copy the link and share it via any platform'}
+                {shareMethod === 'whatsapp' && 'Share the signature link via WhatsApp'}
+                <br />• The signature request expires in 7 days
               </p>
             </div>
             
@@ -910,6 +1002,8 @@ export default function DocumentsPage() {
                 onClick={() => {
                   setSendingForSignature(null);
                   setSignatureFormData({ signerName: '', signerEmail: '', message: '' });
+                  setSignatureLink('');
+                  setShareMethod('email');
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
@@ -917,10 +1011,12 @@ export default function DocumentsPage() {
               </button>
               <button
                 onClick={handleSendForSignature}
-                disabled={!signatureFormData.signerName || !signatureFormData.signerEmail}
+                disabled={!signatureFormData.signerName || (shareMethod === 'email' && !signatureFormData.signerEmail)}
                 className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
-                Send for Signature
+                {shareMethod === 'email' && 'Send Email'}
+                {shareMethod === 'link' && 'Generate Link'}
+                {shareMethod === 'whatsapp' && 'Share on WhatsApp'}
               </button>
             </div>
           </div>

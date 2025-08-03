@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // Global storage for signature requests
 // NOTE: In production, use a database (PostgreSQL, Redis, Vercel KV, etc.)
@@ -41,31 +41,11 @@ interface AuditEntry {
   userAgent?: string;
 }
 
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+// Initialize Resend if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if SMTP is configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.warn('SMTP credentials not configured. Email will not be sent.');
-      return NextResponse.json(
-        { 
-          error: 'Email service not configured. Please set up SMTP credentials in environment variables.',
-          details: 'Add SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS to your .env file'
-        },
-        { status: 503 }
-      );
-    }
-
     const body = await request.json();
     const {
       documentId,
@@ -296,31 +276,51 @@ export async function POST(request: NextRequest) {
       </html>
     `;
 
-    // Send email
-    const mailOptions = {
-      from: process.env.SMTP_FROM || 'PulseCRM <noreply@pulsecrm.com>',
-      to: signerEmail,
-      subject: `Signature Requested: ${documentName}`,
-      html: emailHtml,
-      text: `Hello ${signerName},\n\n${requestedBy} has requested your signature on: ${documentName}\n\nClick here to sign: ${signatureUrl}\n\nThis request will expire in 7 days.\n\nPulseCRM Document Management`,
-    };
+    // Try to send email if Resend is configured
+    let emailSent = false;
+    let emailError = null;
+    
+    if (resend) {
+      try {
+        await resend.emails.send({
+          from: 'PulseCRM <onboarding@resend.dev>',
+          to: signerEmail,
+          subject: `Signature Requested: ${documentName}`,
+          html: emailHtml,
+        });
+        emailSent = true;
+      } catch (error) {
+        console.error('Resend email error:', error);
+        emailError = 'Failed to send email';
+      }
+    } else {
+      console.log('Email service not configured. Signature link generated but email not sent.');
+    }
 
-    await transporter.sendMail(mailOptions);
-
-    // Add email sent to audit trail
-    signatureRequest.auditTrail.push({
-      action: 'Signature request email sent',
-      timestamp: new Date(),
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-    });
+    // Add appropriate audit trail entry
+    if (emailSent) {
+      signatureRequest.auditTrail.push({
+        action: 'Signature request email sent',
+        timestamp: new Date(),
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      });
+    } else {
+      signatureRequest.auditTrail.push({
+        action: 'Signature request created (link generated)',
+        timestamp: new Date(),
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Signature request sent successfully',
+      message: emailSent ? 'Signature request sent successfully' : 'Signature link generated successfully',
       requestId,
       token,
       signatureUrl,
       expiresAt: signatureRequest.expiresAt,
+      emailSent,
+      emailError,
     });
 
   } catch (error) {

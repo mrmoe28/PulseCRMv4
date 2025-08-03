@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FileText, CheckCircle, AlertCircle, Shield, Clock, User } from 'lucide-react';
-import { EmailService } from '@/lib/email-service';
 
 interface SignatureRequest {
   id: string;
@@ -45,35 +44,6 @@ export default function SignaturePage() {
 
   const fetchSignatureRequest = async () => {
     try {
-      // First try to get from client-side storage
-      const emailService = EmailService.getInstance();
-      const storedRequest = emailService.getSignatureRequest(token);
-      
-      if (storedRequest) {
-        // Check if expired
-        if (new Date() > new Date(storedRequest.expiresAt)) {
-          setError('This signature request has expired');
-          setLoading(false);
-          return;
-        }
-        
-        setSignatureRequest({
-          id: storedRequest.documentId,
-          documentName: storedRequest.documentName,
-          documentUrl: storedRequest.documentUrl,
-          signerName: storedRequest.signerName,
-          signerEmail: storedRequest.signerEmail,
-          requestedBy: storedRequest.requestedBy,
-          requestedAt: storedRequest.requestedAt,
-          expiresAt: storedRequest.expiresAt,
-          status: storedRequest.status,
-        });
-        setSignature(storedRequest.signerName);
-        setLoading(false);
-        return;
-      }
-      
-      // Fall back to API if not in client storage
       const response = await fetch(`/api/signature-request/${token}`);
       const data = await response.json();
 

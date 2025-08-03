@@ -16,9 +16,10 @@ interface DocumentViewerProps {
     file?: File;
   };
   onClose: () => void;
+  onSendForSignature?: () => void;
 }
 
-export default function DocumentViewer({ document, onClose }: DocumentViewerProps) {
+export default function DocumentViewer({ document, onClose, onSendForSignature }: DocumentViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isPDF = document.type === 'application/pdf' || document.name.toLowerCase().endsWith('.pdf');
@@ -26,7 +27,7 @@ export default function DocumentViewer({ document, onClose }: DocumentViewerProp
   
   // For PDFs, use the enhanced PDF viewer
   if (isPDF) {
-    return <PDFViewer document={document} onClose={onClose} />;
+    return <PDFViewer document={document} onClose={onClose} onSendForSignature={onSendForSignature} />;
   }
   
   const toggleFullscreen = () => {
