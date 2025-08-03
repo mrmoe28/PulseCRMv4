@@ -23,6 +23,7 @@ yarn-error.log*
 
 # Vercel
 .vercel
+.env.vercel
 
 # Turbo
 .turbo
