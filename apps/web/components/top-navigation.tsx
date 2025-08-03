@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { ThemeSwitcher } from './theme-switcher';
 
 const Icons = {
   dashboard: (
@@ -77,25 +78,6 @@ export default function TopNavigation({ user }: TopNavigationProps) {
     { id: 2, text: 'Document approved', read: false },
     { id: 3, text: 'Contractor added', read: false },
   ]);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-
-  // Load theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('pulse_theme');
-    const isDark = savedTheme ? savedTheme === 'dark' : true; // Default to dark mode
-
-    setIsDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Save default theme if none exists
-    if (!savedTheme) {
-      localStorage.setItem('pulse_theme', 'dark');
-    }
-  }, []);
 
   // Load profile image from localStorage
   useEffect(() => {
@@ -191,17 +173,6 @@ export default function TopNavigation({ user }: TopNavigationProps) {
     // Should search across contacts, jobs, tasks, documents
   };
 
-  const toggleTheme = () => {
-    const newTheme = isDarkMode ? 'light' : 'dark';
-    setIsDarkMode(!isDarkMode);
-    localStorage.setItem('pulse_theme', newTheme);
-
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -318,22 +289,8 @@ export default function TopNavigation({ user }: TopNavigationProps) {
               </svg>
             </button>
 
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
+            {/* Theme Switcher */}
+            <ThemeSwitcher />
 
             {/* Notifications */}
             <div className="relative">

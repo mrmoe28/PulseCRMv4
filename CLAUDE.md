@@ -145,6 +145,16 @@ The app requires several environment variables:
 - File uploads are configurable between local, Vercel Blob, and S3
 - Currently using in-memory storage for development (will not persist between restarts)
 
+### Troubleshooting Vercel Build Issues
+
+**IMPORTANT**: See `VERCEL_BUILD_ISSUES.md` for comprehensive build error solutions.
+
+Common issues and quick fixes:
+1. **Module not found errors**: Ensure exact case matching in imports (Linux is case-sensitive)
+2. **Missing dependencies**: Run `cd apps/web && pnpm add <package>` and commit both package.json and pnpm-lock.yaml
+3. **Environment variables**: Set in Vercel dashboard under Project Settings → Environment Variables
+4. **Always test locally first**: Run `pnpm build` before pushing to GitHub
+
 ### Common Development Tasks
 
 #### Running Database Migrations
