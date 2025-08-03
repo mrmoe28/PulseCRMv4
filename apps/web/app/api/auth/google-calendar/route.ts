@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { stateTokens, cleanupExpiredStateTokens, storeDemoToken } from '@/lib/api/tokenStorage';
-import { hasOAuthConfig, buildAuthUrl } from '@/lib/api/oauth-config';
+import { stateTokens, cleanupExpiredStateTokens } from '@/lib/api/tokenStorage';
+import { googleCalendarService } from '@/lib/services/google-calendar.service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,26 +21,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if we have Google OAuth credentials
-    const provider = 'google-calendar';
-    const hasConfig = hasOAuthConfig(provider);
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CALENDAR_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
     
-    if (!hasConfig) {
-      // Always use demo mode when credentials are not configured
-      // This provides a better user experience and allows testing without setup
-      const message = process.env.NODE_ENV === 'production' 
-        ? 'Google Calendar connected (Demo Mode - Add GOOGLE_CALENDAR_CLIENT_ID for production)'
-        : 'Google Calendar connected (Demo Mode)';
-      
-      // Store demo token for connection status checking
-      storeDemoToken(`${organizationId}_google_calendar`, userId);
-      
-      // Construct absolute URL for redirect
-      const redirectUrl = new URL(returnUrl, baseUrl);
-      redirectUrl.searchParams.set('integration', 'google-calendar');
-      redirectUrl.searchParams.set('status', 'demo-connected');
-      redirectUrl.searchParams.set('message', message);
-      
-      return NextResponse.redirect(redirectUrl.toString());
+    if (!clientId || !clientSecret) {
+      return NextResponse.json(
+        { error: 'Google Calendar integration is not configured. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your environment variables.' },
+        { status: 503 }
+      );
     }
 
     // Generate state token for CSRF protection
@@ -48,7 +36,7 @@ export async function GET(req: NextRequest) {
     stateTokens.set(state, {
       organizationId,
       userId,
-      provider,
+      provider: 'google-calendar',
       returnUrl,
       timestamp: Date.now(),
     });
@@ -58,14 +46,10 @@ export async function GET(req: NextRequest) {
 
     // Build redirect URI for callback
     const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 
-      `${process.env.NEXTAUTH_URL || baseUrl}/api/integrations/google/callback`;
+      `${process.env.NEXTAUTH_URL || baseUrl}/api/oauth/google-calendar/callback`;
 
-    // Build OAuth authorization URL using shared config
-    const authUrl = buildAuthUrl(provider, state, redirectUri);
-    
-    if (!authUrl) {
-      throw new Error('Failed to build authorization URL');
-    }
+    // Build OAuth authorization URL using Google Calendar service
+    const authUrl = googleCalendarService.getAuthorizationUrl(state, redirectUri);
 
     // Redirect to Google OAuth
     return NextResponse.redirect(authUrl);

@@ -1,11 +1,19 @@
-// Shared in-memory token storage for OAuth tokens and state
-// In production, this should be replaced with database storage or Redis
+// OAuth token storage with state management
+// TODO: Replace in-memory storage with database in production
 
-// Store OAuth tokens for integrations
+import crypto from 'crypto';
+
+// Store OAuth tokens for integrations (temporary in-memory storage)
 const tokenStorage = new Map<string, any>();
 
 // Store OAuth state tokens for CSRF protection
-const stateTokens = new Map<string, { organizationId: string; userId: string; timestamp: number }>();
+const stateTokens = new Map<string, { 
+  organizationId: string; 
+  userId: string; 
+  provider?: string;
+  returnUrl?: string;
+  timestamp: number;
+}>();
 
 // Helper function to clean up expired state tokens
 export function cleanupExpiredStateTokens() {
@@ -17,34 +25,54 @@ export function cleanupExpiredStateTokens() {
   }
 }
 
-// Helper function to store demo tokens
-export function storeDemoToken(tokenKey: string, userId: string) {
-  // Extract provider from token key (format: organizationId_provider)
-  const parts = tokenKey.split('_');
-  const provider = parts[parts.length - 1];
-  
-  let scope = '';
-  if (provider === 'google-calendar' || provider === 'calendar') {
-    scope = 'https://www.googleapis.com/auth/calendar';
-  } else if (provider === 'gmail') {
-    scope = 'https://mail.google.com/';
-  } else if (provider === 'slack') {
-    scope = 'channels:read chat:write';
-  } else if (provider === 'quickbooks') {
-    scope = 'com.intuit.quickbooks.accounting';
+// Store OAuth tokens securely
+export function storeOAuthTokens(
+  organizationId: string, 
+  provider: string, 
+  tokens: {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+    token_type?: string;
   }
+) {
+  const tokenKey = `${organizationId}_${provider}`;
+  
+  // Calculate expiry time
+  const expiresAt = tokens.expires_in 
+    ? Date.now() + (tokens.expires_in * 1000)
+    : Date.now() + 3600000; // Default 1 hour
   
   tokenStorage.set(tokenKey, {
-    connectedAt: new Date().toISOString(),
-    connectedBy: userId,
-    isDemo: true,
-    // Mock token data for demo mode
-    access_token: 'demo_access_token',
-    refresh_token: 'demo_refresh_token',
-    expires_at: Date.now() + 3600000, // 1 hour from now
-    scope: scope,
+    ...tokens,
+    expires_at: expiresAt,
+    stored_at: new Date().toISOString(),
     provider: provider,
   });
+  
+  return tokenKey;
+}
+
+// Get OAuth tokens
+export function getOAuthTokens(organizationId: string, provider: string) {
+  const tokenKey = `${organizationId}_${provider}`;
+  return tokenStorage.get(tokenKey);
+}
+
+// Delete OAuth tokens
+export function deleteOAuthTokens(organizationId: string, provider: string) {
+  const tokenKey = `${organizationId}_${provider}`;
+  return tokenStorage.delete(tokenKey);
+}
+
+// Check if tokens are expired
+export function isTokenExpired(tokens: any): boolean {
+  if (!tokens || !tokens.expires_at) {
+    return true;
+  }
+  // Add 5 minute buffer before expiry
+  return Date.now() > (tokens.expires_at - 300000);
 }
 
 export { tokenStorage, stateTokens };

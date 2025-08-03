@@ -22,13 +22,13 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
       try {
         const userData = JSON.parse(user);
         // Try multiple possible fields for user ID
-        return userData.id || userData.userId || userData.user_id || 'test-user';
+        return userData.id || userData.userId || userData.user_id || '';
       } catch (e) {
         console.error('Failed to parse user data for userId:', e);
-        return 'test-user';
+        return '';
       }
     }
-    return 'test-user';
+    return '';
   };
 
   // Check connection status
@@ -87,15 +87,14 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
     }
     
     const userId = getUserId();
-    console.log('Connecting Google Calendar with:', { organizationId, userId });
-    
-    // Validate userId and ensure it's not empty
-    let finalUserId = userId;
-    if (!userId || userId === 'test-user') {
-      // If still no valid userId, use a default
-      finalUserId = 'test-user';
-      console.log('Using default userId:', finalUserId);
+    if (!userId) {
+      console.error('Missing userId');
+      addToast('Error: User ID not found. Please log in again.', 'error');
+      setConnecting(false);
+      return;
     }
+    
+    console.log('Connecting Google Calendar with:', { organizationId, userId });
     
     setConnecting(true);
     
@@ -114,7 +113,7 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
     }
 
     // Redirect to OAuth flow with validated parameters
-    const oauthUrl = `/api/auth/google-calendar?organizationId=${encodeURIComponent(organizationId)}&userId=${encodeURIComponent(finalUserId)}&returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    const oauthUrl = `/api/auth/google-calendar?organizationId=${encodeURIComponent(organizationId)}&userId=${encodeURIComponent(userId)}&returnUrl=${encodeURIComponent(window.location.pathname)}`;
     console.log('Redirecting to OAuth URL:', oauthUrl);
     window.location.href = oauthUrl;
   };
@@ -135,7 +134,7 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
     const error = urlParams.get('error');
     
     if (integration === 'google-calendar') {
-      if (status === 'connected' || status === 'demo-connected') {
+      if (status === 'connected') {
         addToast(message || 'Google Calendar connected successfully', 'success');
         refetchStatus();
         if (onSuccess) onSuccess();
@@ -149,15 +148,15 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
     }
   }, []);
 
-  // Demo: Create a sample job event
-  const handleCreateDemoEvent = () => {
+  // Create a job event
+  const handleCreateJobEvent = (job: any) => {
     syncJobMutation.mutate({
       organizationId,
-      jobId: 'demo-job-1',
-      jobTitle: 'Kitchen Renovation - Smith Residence',
-      jobDescription: 'Complete kitchen remodel including cabinets, countertops, and appliances',
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
-      duration: 120, // 2 hours
+      jobId: job.id,
+      jobTitle: job.title,
+      jobDescription: job.description || '',
+      dueDate: job.dueDate,
+      duration: job.duration || 120,
     });
   };
 
@@ -237,14 +236,6 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
             >
               <Calendar className="w-4 h-4" />
               {showEvents ? 'Hide' : 'Show'} Upcoming Events
-            </button>
-            <button
-              onClick={handleCreateDemoEvent}
-              disabled={syncJobMutation.isLoading}
-              className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              <Plus className="w-4 h-4" />
-              Sync Demo Job
             </button>
             <button
               onClick={() => refetchEvents()}

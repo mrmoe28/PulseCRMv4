@@ -30,16 +30,21 @@ export default function IntegrationsPage() {
       try {
         const userData = JSON.parse(user);
         console.log('Parsed user data:', userData);
-        const orgId = userData.organizationId || userData.organization?.id || userData.orgId || 'test-org';
+        const orgId = userData.organizationId || userData.organization?.id || userData.orgId || '';
         console.log('Setting organizationId to:', orgId);
-        setOrganizationId(orgId);
+        if (orgId) {
+          setOrganizationId(orgId);
+        } else {
+          console.error('No organization ID found in user data');
+          addToast('Error: Organization ID not found. Please log in again.', 'error');
+        }
       } catch (e) {
         console.error('Failed to parse user data:', e);
-        setOrganizationId('test-org');
+        addToast('Error: Failed to load user data. Please log in again.', 'error');
       }
     } else {
-      console.log('No user data in localStorage, using test-org');
-      setOrganizationId('test-org');
+      console.log('No user data in localStorage');
+      addToast('Error: No user session found. Please log in.', 'error');
     }
   }, []);
 

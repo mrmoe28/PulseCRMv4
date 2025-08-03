@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { stateTokens, storeDemoToken } from '@/lib/api/tokenStorage';
+import { stateTokens } from '@/lib/api/tokenStorage';
 import { getOAuthConfig, hasOAuthConfig, buildAuthUrl } from '@/lib/api/oauth-config';
 
 export async function GET(
@@ -26,21 +26,10 @@ export async function GET(
     
     // Check if OAuth is configured for this provider
     if (!hasOAuthConfig(provider)) {
-      console.log(`OAuth not configured for ${provider}, using demo mode`);
-      
-      // Demo mode - store mock token and redirect back
-      storeDemoToken(`${organizationId}_${provider}`, userId);
-      
-      const message = process.env.NODE_ENV === 'production' 
-        ? `${provider} connected (Demo Mode - Add credentials for production)`
-        : `${provider} connected (Demo Mode)`;
-      
-      const redirectUrl = new URL(returnUrl, baseUrl);
-      redirectUrl.searchParams.set('integration', provider);
-      redirectUrl.searchParams.set('status', 'demo-connected');
-      redirectUrl.searchParams.set('message', message);
-      
-      return NextResponse.redirect(redirectUrl.toString());
+      return NextResponse.json(
+        { error: `OAuth integration for ${provider} is not configured. Please add the required credentials to your environment variables.` },
+        { status: 503 }
+      );
     }
     
     // Special handling for Stripe (API key based)
