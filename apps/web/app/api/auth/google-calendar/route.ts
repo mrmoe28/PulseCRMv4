@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-
-// Store state tokens temporarily (in production, use Redis or database)
-const stateTokens = new Map<string, { organizationId: string; userId: string; timestamp: number }>();
+import { stateTokens, cleanupExpiredStateTokens, storeDemoToken } from '@/lib/api/tokenStorage';
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,6 +31,9 @@ export async function GET(req: NextRequest) {
         ? 'Google Calendar connected (Demo Mode - Add GOOGLE_CALENDAR_CLIENT_ID for production)'
         : 'Google Calendar connected (Demo Mode)';
       
+      // Store demo token for connection status checking
+      storeDemoToken(organizationId, userId);
+      
       // Construct absolute URL for redirect
       const redirectUrl = new URL(returnUrl, baseUrl);
       redirectUrl.searchParams.set('integration', 'google-calendar');
@@ -50,13 +51,8 @@ export async function GET(req: NextRequest) {
       timestamp: Date.now(),
     });
 
-    // Clean up old state tokens (older than 10 minutes)
-    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-    for (const [key, value] of stateTokens.entries()) {
-      if (value.timestamp < tenMinutesAgo) {
-        stateTokens.delete(key);
-      }
-    }
+    // Clean up old state tokens
+    cleanupExpiredStateTokens();
 
     // Build Google OAuth URL
     const authParams = new URLSearchParams({
@@ -82,5 +78,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Export the state tokens for use in the callback
-export { stateTokens };
+// State tokens are now imported from shared module

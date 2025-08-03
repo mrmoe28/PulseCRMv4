@@ -1,10 +1,8 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { tokenStorage } from '../tokenStorage';
 
 const t = initTRPC.create();
-
-// Import token storage (in production, use database)
-const tokenStorage = new Map<string, any>();
 
 // Helper to get access token
 async function getAccessToken(organizationId: string): Promise<string | null> {

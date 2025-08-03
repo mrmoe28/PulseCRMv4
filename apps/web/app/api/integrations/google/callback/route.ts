@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-
-// Import state tokens from auth route (in production, use shared storage)
-const stateTokens = new Map<string, { organizationId: string; userId: string; timestamp: number }>();
-
-// Simple in-memory storage for tokens (replace with database in production)
-const tokenStorage = new Map<string, any>();
+import { tokenStorage, stateTokens } from '@/lib/api/tokenStorage';
 
 export async function GET(req: NextRequest) {
   try {
@@ -202,5 +197,4 @@ export async function refreshAccessToken(organizationId: string): Promise<string
   }
 }
 
-// Export token storage for use in other routes
-export { tokenStorage };
+// Token storage is now imported from shared module
