@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Palette } from 'lucide-react';
 
 const themes = [
   { id: 'default', name: 'Claude Elegant', icon: '✨', colors: { primary: '#D97F3E', secondary: '#E6E2DD' } },
@@ -18,6 +17,7 @@ export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log('ThemeSwitcher mounting...');
     setMounted(true);
     // Load saved preferences
     const savedTheme = localStorage.getItem('pulse_color_theme') as Theme;
@@ -68,11 +68,16 @@ export function ThemeSwitcher() {
   return (
     <div className="relative theme-switcher-container">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          console.log('Theme button clicked!');
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         title="Change color theme"
       >
-        <Palette className="w-4 h-4" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
         <span className="hidden sm:inline">{currentTheme.icon}</span>
       </button>
 
