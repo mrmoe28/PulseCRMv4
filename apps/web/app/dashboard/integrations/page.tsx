@@ -9,7 +9,7 @@ import {
   Link2, Workflow, Database, Globe, Lock, Unlock, 
   PlayCircle, PauseCircle, BarChart3, Cpu
 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '../../../components/Toast';
 
 interface Integration {
   id: string;
@@ -494,27 +494,40 @@ export default function IntegrationsPage() {
 
   // Animate stats on mount
   useEffect(() => {
-    const connectedCount = integrations.filter(i => i.connected).length;
-    const totalApiCalls = integrations.reduce((sum, i) => sum + (i.apiCalls || 0), 0);
-    
-    const animateValue = (start: number, end: number, duration: number, setter: (val: number) => void) => {
-      const startTime = Date.now();
-      const animate = () => {
-        const now = Date.now();
-        const progress = Math.min((now - startTime) / duration, 1);
-        const value = Math.floor(start + (end - start) * progress);
-        setter(value);
-        if (progress < 1) requestAnimationFrame(animate);
+    try {
+      const connectedCount = integrations.filter(i => i.connected).length;
+      const totalApiCalls = integrations.reduce((sum, i) => sum + (i.apiCalls || 0), 0);
+      
+      const animateValue = (start: number, end: number, duration: number, setter: (val: number) => void) => {
+        const startTime = Date.now();
+        const animate = () => {
+          try {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const value = Math.floor(start + (end - start) * progress);
+            setter(value);
+            if (progress < 1) requestAnimationFrame(animate);
+          } catch (error) {
+            console.error('Animation error:', error);
+            setter(end); // Set final value on error
+          }
+        };
+        animate();
       };
-      animate();
-    };
 
-    animateValue(0, connectedCount, 1000, (val) => 
-      setAnimatedStats(prev => ({ ...prev, connected: val }))
-    );
-    animateValue(0, totalApiCalls, 1500, (val) => 
-      setAnimatedStats(prev => ({ ...prev, apiCalls: val }))
-    );
+      animateValue(0, connectedCount, 1000, (val) => 
+        setAnimatedStats(prev => ({ ...prev, connected: val }))
+      );
+      animateValue(0, totalApiCalls, 1500, (val) => 
+        setAnimatedStats(prev => ({ ...prev, apiCalls: val }))
+      );
+    } catch (error) {
+      console.error('Error initializing animations:', error);
+      // Set static values on error
+      const connectedCount = integrations.filter(i => i.connected).length;
+      const totalApiCalls = integrations.reduce((sum, i) => sum + (i.apiCalls || 0), 0);
+      setAnimatedStats({ connected: connectedCount, apiCalls: totalApiCalls });
+    }
   }, []);
 
   const filteredIntegrations = integrations.filter(integration => {
@@ -533,16 +546,26 @@ export default function IntegrationsPage() {
   const activeAutomations = integrations.reduce((sum, i) => sum + (i.automations || 0), 0);
 
   const handleConnect = (integration: Integration) => {
-    setSelectedIntegration(integration);
-    if (integration.configRequired) {
-      setShowWizard(true);
-    } else {
-      addToast(`Connected to ${integration.name}`, 'success');
+    try {
+      setSelectedIntegration(integration);
+      if (integration.configRequired) {
+        setShowWizard(true);
+      } else {
+        addToast(`Connected to ${integration.name}`, 'success');
+      }
+    } catch (error) {
+      console.error('Error connecting integration:', error);
+      addToast(`Failed to connect to ${integration.name}`, 'error');
     }
   };
 
   const handleDisconnect = (integration: Integration) => {
-    addToast(`Disconnected from ${integration.name}`, 'success');
+    try {
+      addToast(`Disconnected from ${integration.name}`, 'success');
+    } catch (error) {
+      console.error('Error disconnecting integration:', error);
+      addToast(`Failed to disconnect from ${integration.name}`, 'error');
+    }
   };
 
   const getStatusColor = (status?: string) => {

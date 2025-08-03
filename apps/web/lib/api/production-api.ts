@@ -1,6 +1,9 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { pbkdf2Sync, randomBytes } from 'crypto';
 import { z } from 'zod';
+import { integrationsRouter } from './routers/integrations.router';
+import { apiKeysRouter } from './routers/apiKeys.router';
+import { webhooksRouter } from './routers/webhooks.router';
 
 // Simple in-memory storage for now - will be replaced with real DB later
 // Cleared all existing user data
@@ -14,6 +17,10 @@ const jobs = new Map<string, any>();
 const t = initTRPC.create();
 
 export const appRouter = t.router({
+    // Sub-routers
+    integrations: integrationsRouter,
+    apiKeys: apiKeysRouter,
+    webhooks: webhooksRouter,
     // Test endpoint
     hello: t.procedure
         .input(z.object({ name: z.string() }))
