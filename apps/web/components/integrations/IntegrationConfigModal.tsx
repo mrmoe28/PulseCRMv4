@@ -41,7 +41,19 @@ export default function IntegrationConfigModal({
     try {
       if (integration.authType === 'oauth2') {
         // Initiate OAuth flow
-        const oauthUrl = `/api/oauth/${integration.id}/authorize?org=${organizationId}`;
+        let oauthUrl = '';
+        
+        // Use integration's OAuth config if available
+        if (integration.oauthConfig?.authUrl) {
+          oauthUrl = `${integration.oauthConfig.authUrl}?org=${organizationId}`;
+        } else {
+          // Fallback to generic OAuth route
+          oauthUrl = `/api/oauth/${integration.id}/authorize?org=${organizationId}`;
+        }
+        
+        // Add return URL to track where to redirect after OAuth
+        oauthUrl += `&returnUrl=${encodeURIComponent(window.location.pathname)}`;
+        
         window.location.href = oauthUrl;
       } else if (integration.authType === 'api_key') {
         // Connect with API key

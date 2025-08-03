@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { stateTokens, cleanupExpiredStateTokens, storeDemoToken } from '@/lib/api/tokenStorage';
+import { hasOAuthConfig, buildAuthUrl } from '@/lib/api/oauth-config';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,11 +21,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if we have Google OAuth credentials
-    const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 
-      `${process.env.NEXTAUTH_URL || baseUrl}/api/integrations/google/callback`;
-
-    if (!clientId) {
+    const provider = 'google-calendar';
+    const hasConfig = hasOAuthConfig(provider);
+    
+    if (!hasConfig) {
       // Always use demo mode when credentials are not configured
       // This provides a better user experience and allows testing without setup
       const message = process.env.NODE_ENV === 'production' 
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         : 'Google Calendar connected (Demo Mode)';
       
       // Store demo token for connection status checking
-      storeDemoToken(organizationId, userId);
+      storeDemoToken(`${organizationId}_google_calendar`, userId);
       
       // Construct absolute URL for redirect
       const redirectUrl = new URL(returnUrl, baseUrl);
@@ -48,24 +48,24 @@ export async function GET(req: NextRequest) {
     stateTokens.set(state, {
       organizationId,
       userId,
+      provider,
+      returnUrl,
       timestamp: Date.now(),
     });
 
     // Clean up old state tokens
     cleanupExpiredStateTokens();
 
-    // Build Google OAuth URL
-    const authParams = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
-      access_type: 'offline',
-      prompt: 'consent',
-      state: state,
-    });
+    // Build redirect URI for callback
+    const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 
+      `${process.env.NEXTAUTH_URL || baseUrl}/api/integrations/google/callback`;
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
+    // Build OAuth authorization URL using shared config
+    const authUrl = buildAuthUrl(provider, state, redirectUri);
+    
+    if (!authUrl) {
+      throw new Error('Failed to build authorization URL');
+    }
 
     // Redirect to Google OAuth
     return NextResponse.redirect(authUrl);

@@ -58,6 +58,10 @@ export const integrationsRouter = t.router({
           features: ['Email sync', 'Auto-reply', 'Templates', 'Attachments'],
           isActive: true,
           isBeta: false,
+          oauthConfig: {
+            authUrl: '/api/oauth/gmail/authorize',
+            scopes: ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send'],
+          },
         },
         {
           id: 'slack',
@@ -71,6 +75,10 @@ export const integrationsRouter = t.router({
           features: ['Notifications', 'Channels', 'Direct messages', 'File sharing'],
           isActive: true,
           isBeta: false,
+          oauthConfig: {
+            authUrl: '/api/oauth/slack/authorize',
+            scopes: ['channels:read', 'chat:write', 'users:read'],
+          },
         },
         {
           id: 'stripe',
@@ -97,6 +105,10 @@ export const integrationsRouter = t.router({
           features: ['Invoices', 'Expenses', 'Reports', 'Payroll'],
           isActive: true,
           isBeta: false,
+          oauthConfig: {
+            authUrl: '/api/oauth/quickbooks/authorize',
+            scopes: ['com.intuit.quickbooks.accounting'],
+          },
         },
       ];
 
