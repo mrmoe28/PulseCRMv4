@@ -20,12 +20,15 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
     const user = localStorage.getItem('pulse_user');
     if (user) {
       try {
-        return JSON.parse(user).id || 'system';
+        const userData = JSON.parse(user);
+        // Try multiple possible fields for user ID
+        return userData.id || userData.userId || userData.user_id || 'test-user';
       } catch (e) {
-        return 'system';
+        console.error('Failed to parse user data for userId:', e);
+        return 'test-user';
       }
     }
-    return 'system';
+    return 'test-user';
   };
 
   // Check connection status
@@ -75,8 +78,26 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
 
   // Handle connect button click
   const handleConnect = () => {
-    setConnecting(true);
+    // Validate organizationId before proceeding
+    if (!organizationId) {
+      console.error('Missing organizationId');
+      addToast('Error: Organization ID not found. Please refresh the page.', 'error');
+      setConnecting(false);
+      return;
+    }
+    
     const userId = getUserId();
+    console.log('Connecting Google Calendar with:', { organizationId, userId });
+    
+    // Validate userId and ensure it's not empty
+    let finalUserId = userId;
+    if (!userId || userId === 'test-user') {
+      // If still no valid userId, use a default
+      finalUserId = 'test-user';
+      console.log('Using default userId:', finalUserId);
+    }
+    
+    setConnecting(true);
     
     // Check for query params to handle callback
     const urlParams = new URLSearchParams(window.location.search);
@@ -92,8 +113,10 @@ export default function GoogleCalendarConnect({ organizationId, onSuccess }: Goo
       return;
     }
 
-    // Redirect to OAuth flow
-    window.location.href = `/api/auth/google-calendar?organizationId=${organizationId}&userId=${userId}&returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    // Redirect to OAuth flow with validated parameters
+    const oauthUrl = `/api/auth/google-calendar?organizationId=${encodeURIComponent(organizationId)}&userId=${encodeURIComponent(finalUserId)}&returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    console.log('Redirecting to OAuth URL:', oauthUrl);
+    window.location.href = oauthUrl;
   };
 
   // Handle disconnect

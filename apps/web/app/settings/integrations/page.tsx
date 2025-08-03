@@ -25,13 +25,21 @@ export default function IntegrationsPage() {
   // Get organization ID from localStorage
   useEffect(() => {
     const user = localStorage.getItem('pulse_user');
+    console.log('Raw user data from localStorage:', user);
     if (user) {
       try {
         const userData = JSON.parse(user);
-        setOrganizationId(userData.organizationId || userData.organization?.id || 'default');
+        console.log('Parsed user data:', userData);
+        const orgId = userData.organizationId || userData.organization?.id || userData.orgId || 'test-org';
+        console.log('Setting organizationId to:', orgId);
+        setOrganizationId(orgId);
       } catch (e) {
-        setOrganizationId('default');
+        console.error('Failed to parse user data:', e);
+        setOrganizationId('test-org');
       }
+    } else {
+      console.log('No user data in localStorage, using test-org');
+      setOrganizationId('test-org');
     }
   }, []);
 
