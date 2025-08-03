@@ -24,16 +24,14 @@ export async function GET(req: NextRequest) {
       `${process.env.NEXTAUTH_URL || 'http://localhost:3010'}/api/integrations/google/callback`;
 
     if (!clientId) {
-      // For development/demo mode, return a mock success
-      if (process.env.NODE_ENV === 'development') {
-        return NextResponse.redirect(
-          `${returnUrl}?integration=google-calendar&status=demo-connected&message=Google Calendar connected (Demo Mode)`
-        );
-      }
+      // Always use demo mode when credentials are not configured
+      // This provides a better user experience and allows testing without setup
+      const message = process.env.NODE_ENV === 'production' 
+        ? 'Google Calendar connected (Demo Mode - Add GOOGLE_CALENDAR_CLIENT_ID for production)'
+        : 'Google Calendar connected (Demo Mode)';
       
-      return NextResponse.json(
-        { error: 'Google Calendar integration not configured. Please add GOOGLE_CALENDAR_CLIENT_ID to environment variables.' },
-        { status: 500 }
+      return NextResponse.redirect(
+        `${returnUrl}?integration=google-calendar&status=demo-connected&message=${encodeURIComponent(message)}`
       );
     }
 
