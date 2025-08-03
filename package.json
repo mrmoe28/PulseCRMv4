@@ -41,7 +41,8 @@
     "pdfjs-dist": "^5.3.93",
     "postgres": "^3.4.7",
     "react": "^18.3.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "turbo": "^2.3.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
@@ -54,7 +55,6 @@
     "postcss": "^8.5.5",
     "prettier": "^3.1.1",
     "tailwindcss": "3.4.17",
-    "turbo": "^2.3.3",
     "typescript": "^5.3.3"
   },
   "lint-staged": {
