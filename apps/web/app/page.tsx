@@ -12,6 +12,7 @@ export default function HomePage() {
     const userData = localStorage.getItem('pulse_user');
     const sessionActive = localStorage.getItem('pulse_session_active');
 
+    // Deployment test: v1.0.1 - Connected to Neon Database
     console.log('Homepage auth check:', { userData: !!userData, sessionActive });
 
     if (userData && sessionActive === 'true') {
